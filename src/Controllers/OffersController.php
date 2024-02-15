@@ -51,7 +51,7 @@ class OffersController extends BaseController
     public function createOffer(?CreateOfferRequest $body = null): ?OfferResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/offers.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
@@ -73,7 +73,7 @@ class OffersController extends BaseController
      */
     public function listOffers(): ?ListOffersResponse
     {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/offers.json')->auth('global');
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/offers.json')->auth('BasicAuth');
 
         $_resHandler = $this->responseHandler()->type(ListOffersResponse::class);
 
@@ -93,7 +93,7 @@ class OffersController extends BaseController
     public function readOffers(int $offerId): ?OfferResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/offers/{offer_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('offer_id', $offerId)->required());
 
         $_resHandler = $this->responseHandler()
@@ -101,26 +101,6 @@ class OffersController extends BaseController
             ->type(OfferResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Archive an existing offer. Please provide an `offer_id` in order to archive the correct item.
-     *
-     * @param int $offerId The Chargify id of the offer
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function archiveOffer(int $offerId): void
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/offers/{offer_id}/archive.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('offer_id', $offerId)->required());
-
-        $_resHandler = $this->responseHandler()->throwErrorOn('401', ErrorType::init('Unauthorized'));
-
-        $this->execute($_reqBuilder, $_resHandler);
     }
 
     /**
@@ -136,7 +116,27 @@ class OffersController extends BaseController
     public function unarchiveOffer(int $offerId): void
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/offers/{offer_id}/unarchive.json')
-            ->auth('global')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('offer_id', $offerId)->required());
+
+        $_resHandler = $this->responseHandler()->throwErrorOn('401', ErrorType::init('Unauthorized'));
+
+        $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Archive an existing offer. Please provide an `offer_id` in order to archive the correct item.
+     *
+     * @param int $offerId The Chargify id of the offer
+     *
+     * @return void Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function archiveOffer(int $offerId): void
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/offers/{offer_id}/archive.json')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('offer_id', $offerId)->required());
 
         $_resHandler = $this->responseHandler()->throwErrorOn('401', ErrorType::init('Unauthorized'));

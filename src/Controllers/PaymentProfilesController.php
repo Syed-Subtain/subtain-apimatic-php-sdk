@@ -353,7 +353,7 @@ class PaymentProfilesController extends BaseController
     public function createPaymentProfile(?CreatePaymentProfileRequest $body = null): ?CreatePaymentProfileResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/payment_profiles.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
@@ -364,26 +364,118 @@ class PaymentProfilesController extends BaseController
     }
 
     /**
-     * This method will return all of the active `payment_profiles` for a Site, or for one Customer within
-     * a site.  If no payment profiles are found, this endpoint will return an empty array, not a 404.
+     * Deletes an unused payment profile.
      *
-     * @param array $options Array with all options for search
+     * If the payment profile is in use by one or more subscriptions or groups, a 422 and error message
+     * will be returned.
      *
-     * @return ListPaymentProfilesResponse[]|null Response from the API call
+     * @param string $paymentProfileId The Chargify id of the payment profile
+     *
+     * @return void Response from the API call
      *
      * @throws ApiException Thrown if API call fails
      */
-    public function listPaymentProfiles(array $options): ?array
+    public function deleteUnusedPaymentProfile(string $paymentProfileId): void
     {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/payment_profiles.json')
-            ->auth('global')
-            ->parameters(
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
-                QueryParam::init('customer_id', $options)->commaSeparated()->extract('customerId')
+        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/payment_profiles/{payment_profile_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('payment_profile_id', $paymentProfileId)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn(
+                '422',
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
             );
 
-        $_resHandler = $this->responseHandler()->type(ListPaymentProfilesResponse::class, 1);
+        $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This will delete a payment profile belonging to the customer on the subscription.
+     *
+     * + If the customer has multiple subscriptions, the payment profile will be removed from all of them.
+     *
+     * + If you delete the default payment profile for a subscription, you will need to specify another
+     * payment profile to be the default through the api, or either prompt the user to enter a card in the
+     * billing portal or on the self-service page, or visit the Payment Details tab on the subscription in
+     * the Admin UI and use the “Add New Credit Card” or “Make Active Payment Method” link, (depending on
+     * whether there are other cards present).
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param string $paymentProfileId The Chargify id of the payment profile
+     *
+     * @return void Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function deleteSubscriptionsPaymentProfile(string $subscriptionId, string $paymentProfileId): void
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::DELETE,
+            '/subscriptions/{subscription_id}/payment_profiles/{payment_profile_id}.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
+            );
+
+        $this->execute($_reqBuilder);
+    }
+
+    /**
+     * This will delete a Payment Profile belonging to a Subscription Group.
+     *
+     * **Note**: If the Payment Profile belongs to multiple Subscription Groups and/or Subscriptions, it
+     * will be removed from all of them.
+     *
+     * @param string $uid The uid of the subscription group
+     * @param string $paymentProfileId The Chargify id of the payment profile
+     *
+     * @return void Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function deleteSubscriptionGroupPaymentProfile(string $uid, string $paymentProfileId): void
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::DELETE,
+            '/subscription_groups/{uid}/payment_profiles/{payment_profile_id}.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('uid', $uid)->required(),
+                TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
+            );
+
+        $this->execute($_reqBuilder);
+    }
+
+    /**
+     * One Time Tokens aka Chargify Tokens house the credit card or ACH (Authorize.Net or Stripe only) data
+     * for a customer.
+     *
+     * You can use One Time Tokens while creating a subscription or payment profile instead of passing all
+     * bank account or credit card data directly to a given API endpoint.
+     *
+     * To obtain a One Time Token you have to use [chargify.js](https://developers.chargify.
+     * com/docs/developer-docs/ZG9jOjE0NjAzNDI0-overview).
+     *
+     * @param string $chargifyToken Chargify Token
+     *
+     * @return GetOneTimeTokenRequest|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function readOneTimeToken(string $chargifyToken): ?GetOneTimeTokenRequest
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/one_time_tokens/{chargify_token}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('chargify_token', $chargifyToken)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found', ErrorListResponseException::class))
+            ->type(GetOneTimeTokenRequest::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -435,7 +527,7 @@ class PaymentProfilesController extends BaseController
     public function readPaymentProfile(string $paymentProfileId): ?ReadPaymentProfileResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/payment_profiles/{payment_profile_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('payment_profile_id', $paymentProfileId)->required());
 
         $_resHandler = $this->responseHandler()->type(ReadPaymentProfileResponse::class);
@@ -503,7 +595,7 @@ class PaymentProfilesController extends BaseController
         ?UpdatePaymentProfileRequest $body = null
     ): ?UpdatePaymentProfileResponse {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/payment_profiles/{payment_profile_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('payment_profile_id', $paymentProfileId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -513,131 +605,6 @@ class PaymentProfilesController extends BaseController
         $_resHandler = $this->responseHandler()->type(UpdatePaymentProfileResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Deletes an unused payment profile.
-     *
-     * If the payment profile is in use by one or more subscriptions or groups, a 422 and error message
-     * will be returned.
-     *
-     * @param string $paymentProfileId The Chargify id of the payment profile
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deleteUnusedPaymentProfile(string $paymentProfileId): void
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/payment_profiles/{payment_profile_id}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('payment_profile_id', $paymentProfileId)->required());
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn(
-                '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
-            );
-
-        $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This will delete a payment profile belonging to the customer on the subscription.
-     *
-     * + If the customer has multiple subscriptions, the payment profile will be removed from all of them.
-     *
-     * + If you delete the default payment profile for a subscription, you will need to specify another
-     * payment profile to be the default through the api, or either prompt the user to enter a card in the
-     * billing portal or on the self-service page, or visit the Payment Details tab on the subscription in
-     * the Admin UI and use the “Add New Credit Card” or “Make Active Payment Method” link, (depending on
-     * whether there are other cards present).
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param string $paymentProfileId The Chargify id of the payment profile
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deleteSubscriptionsPaymentProfile(string $subscriptionId, string $paymentProfileId): void
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::DELETE,
-            '/subscriptions/{subscription_id}/payment_profiles/{payment_profile_id}.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
-            );
-
-        $this->execute($_reqBuilder);
-    }
-
-    /**
-     * Submit the two small deposit amounts the customer received in their bank account in order to verify
-     * the bank account. (Stripe only)
-     *
-     * @param int $bankAccountId Identifier of the bank account in the system.
-     * @param BankAccountVerificationRequest|null $body
-     *
-     * @return BankAccountResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function verifyBankAccount(
-        int $bankAccountId,
-        ?BankAccountVerificationRequest $body = null
-    ): ?BankAccountResponse {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::PUT,
-            '/bank_accounts/{bank_account_id}/verification.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('bank_account_id', $bankAccountId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->throwErrorOn(
-                '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
-            )
-            ->type(BankAccountResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This will delete a Payment Profile belonging to a Subscription Group.
-     *
-     * **Note**: If the Payment Profile belongs to multiple Subscription Groups and/or Subscriptions, it
-     * will be removed from all of them.
-     *
-     * @param string $uid The uid of the subscription group
-     * @param string $paymentProfileId The Chargify id of the payment profile
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deleteSubscriptionGroupPaymentProfile(string $uid, string $paymentProfileId): void
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::DELETE,
-            '/subscription_groups/{uid}/payment_profiles/{payment_profile_id}.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('uid', $uid)->required(),
-                TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
-            );
-
-        $this->execute($_reqBuilder);
     }
 
     /**
@@ -663,7 +630,7 @@ class PaymentProfilesController extends BaseController
             '/subscriptions/{subscription_id}/payment_profiles/{payment_profile_id}/change_paym' .
             'ent_profile.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
@@ -704,7 +671,7 @@ class PaymentProfilesController extends BaseController
             RequestMethod::POST,
             '/subscription_groups/{uid}/payment_profiles/{payment_profile_id}/change_payment_profile.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('uid', $uid)->required(),
                 TemplateParam::init('payment_profile_id', $paymentProfileId)->required()
@@ -721,30 +688,63 @@ class PaymentProfilesController extends BaseController
     }
 
     /**
-     * One Time Tokens aka Chargify Tokens house the credit card or ACH (Authorize.Net or Stripe only) data
-     * for a customer.
+     * This method will return all of the active `payment_profiles` for a Site, or for one Customer within
+     * a site.  If no payment profiles are found, this endpoint will return an empty array, not a 404.
      *
-     * You can use One Time Tokens while creating a subscription or payment profile instead of passing all
-     * bank account or credit card data directly to a given API endpoint.
+     * @param array $options Array with all options for search
      *
-     * To obtain a One Time Token you have to use [chargify.js](https://developers.chargify.
-     * com/docs/developer-docs/ZG9jOjE0NjAzNDI0-overview).
-     *
-     * @param string $chargifyToken Chargify Token
-     *
-     * @return GetOneTimeTokenRequest|null Response from the API call
+     * @return ListPaymentProfilesResponse[]|null Response from the API call
      *
      * @throws ApiException Thrown if API call fails
      */
-    public function readOneTimeToken(string $chargifyToken): ?GetOneTimeTokenRequest
+    public function listPaymentProfiles(array $options): ?array
     {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/one_time_tokens/{chargify_token}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('chargify_token', $chargifyToken)->required());
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/payment_profiles.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
+                QueryParam::init('customer_id', $options)->commaSeparated()->extract('customerId')
+            );
+
+        $_resHandler = $this->responseHandler()->type(ListPaymentProfilesResponse::class, 1);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Submit the two small deposit amounts the customer received in their bank account in order to verify
+     * the bank account. (Stripe only)
+     *
+     * @param int $bankAccountId Identifier of the bank account in the system.
+     * @param BankAccountVerificationRequest|null $body
+     *
+     * @return BankAccountResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function verifyBankAccount(
+        int $bankAccountId,
+        ?BankAccountVerificationRequest $body = null
+    ): ?BankAccountResponse {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::PUT,
+            '/bank_accounts/{bank_account_id}/verification.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('bank_account_id', $bankAccountId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
 
         $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found', ErrorListResponseException::class))
-            ->type(GetOneTimeTokenRequest::class);
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->throwErrorOn(
+                '422',
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+            )
+            ->type(BankAccountResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -776,7 +776,7 @@ class PaymentProfilesController extends BaseController
         $_reqBuilder = $this->requestBuilder(
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/request_payment_profiles_update.json'
-        )->auth('global')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
+        )->auth('BasicAuth')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
 
         $_resHandler = $this->responseHandler()
             ->throwErrorOn('404', ErrorType::init('Not Found'))

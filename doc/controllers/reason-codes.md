@@ -10,40 +10,26 @@ $reasonCodesController = $client->getReasonCodesController();
 
 ## Methods
 
-* [Create Reason Code](../../doc/controllers/reason-codes.md#create-reason-code)
-* [List Reason Codes](../../doc/controllers/reason-codes.md#list-reason-codes)
 * [Read Reason Code](../../doc/controllers/reason-codes.md#read-reason-code)
-* [Update Reason Code](../../doc/controllers/reason-codes.md#update-reason-code)
 * [Delete Reason Code](../../doc/controllers/reason-codes.md#delete-reason-code)
+* [List Reason Codes](../../doc/controllers/reason-codes.md#list-reason-codes)
+* [Update Reason Code](../../doc/controllers/reason-codes.md#update-reason-code)
+* [Create Reason Code](../../doc/controllers/reason-codes.md#create-reason-code)
 
 
-# Create Reason Code
+# Read Reason Code
 
-# Reason Codes Intro
-
-ReasonCodes are a way to gain a high level view of why your customers are cancelling the subcription to your product or service.
-
-Add a set of churn reason codes to be displayed in-app and/or the Chargify Billing Portal. As your subscribers decide to cancel their subscription, learn why they decided to cancel.
-
-## Reason Code Documentation
-
-Full documentation on how Reason Codes operate within Chargify can be located under the following links.
-
-[Churn Reason Codes](https://chargify.zendesk.com/hc/en-us/articles/4407896775579#churn-reason-codes)
-
-## Create Reason Code
-
-This method gives a merchant the option to create a reason codes for a given Site.
+This method gives a merchant the option to retrieve a list of a particular code for a given Site by providing the unique numerical ID of the code.
 
 ```php
-function createReasonCode(?CreateReasonCodeRequest $body = null): ?ReasonCodeResponse
+function readReasonCode(int $reasonCodeId): ?ReasonCodeResponse
 ```
 
 ## Parameters
 
 | Parameter | Type | Tags | Description |
 |  --- | --- | --- | --- |
-| `body` | [`?CreateReasonCodeRequest`](../../doc/models/create-reason-code-request.md) | Body, Optional | - |
+| `reasonCodeId` | `int` | Template, Required | The Chargify id of the reason code |
 
 ## Response Type
 
@@ -52,23 +38,57 @@ function createReasonCode(?CreateReasonCodeRequest $body = null): ?ReasonCodeRes
 ## Example Usage
 
 ```php
-$body = CreateReasonCodeRequestBuilder::init(
-    CreateReasonCodeBuilder::init(
-        'NOTHANKYOU',
-        'No thank you!'
-    )
-        ->position(5)
-        ->build()
-)->build();
+$reasonCodeId = 32;
 
-$result = $reasonCodesController->createReasonCode($body);
+$result = $reasonCodesController->readReasonCode($reasonCodeId);
 ```
 
 ## Errors
 
 | HTTP Status Code | Error Description | Exception Class |
 |  --- | --- | --- |
-| 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
+| 404 | Not Found | `ApiException` |
+
+
+# Delete Reason Code
+
+This method gives a merchant the option to delete one reason code from the Churn Reason Codes. This code will be immediately removed. This action is not reversable.
+
+```php
+function deleteReasonCode(int $reasonCodeId): ?ReasonCodesJsonResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `reasonCodeId` | `int` | Template, Required | The Chargify id of the reason code |
+
+## Response Type
+
+[`?ReasonCodesJsonResponse`](../../doc/models/reason-codes-json-response.md)
+
+## Example Usage
+
+```php
+$reasonCodeId = 32;
+
+$result = $reasonCodesController->deleteReasonCode($reasonCodeId);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "ok": "ok"
+}
+```
+
+## Errors
+
+| HTTP Status Code | Error Description | Exception Class |
+|  --- | --- | --- |
+| 404 | Not Found | `ApiException` |
 
 
 # List Reason Codes
@@ -83,8 +103,8 @@ function listReasonCodes(array $options): ?array
 
 | Parameter | Type | Tags | Description |
 |  --- | --- | --- | --- |
-| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`.<br>**Default**: `1`<br>**Constraints**: `>= 1` |
-| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`.<br>**Default**: `20`<br>**Constraints**: `<= 200` |
+| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`. |
+| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`. |
 
 ## Response Type
 
@@ -142,39 +162,6 @@ $result = $reasonCodesController->listReasonCodes($collect);
 ```
 
 
-# Read Reason Code
-
-This method gives a merchant the option to retrieve a list of a particular code for a given Site by providing the unique numerical ID of the code.
-
-```php
-function readReasonCode(int $reasonCodeId): ?ReasonCodeResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `reasonCodeId` | `int` | Template, Required | The Chargify id of the reason code |
-
-## Response Type
-
-[`?ReasonCodeResponse`](../../doc/models/reason-code-response.md)
-
-## Example Usage
-
-```php
-$reasonCodeId = 32;
-
-$result = $reasonCodesController->readReasonCode($reasonCodeId);
-```
-
-## Errors
-
-| HTTP Status Code | Error Description | Exception Class |
-|  --- | --- | --- |
-| 404 | Not Found | `ApiException` |
-
-
 # Update Reason Code
 
 This method gives a merchant the option to update an existing reason code for a given site.
@@ -209,43 +196,56 @@ $result = $reasonCodesController->updateReasonCode($reasonCodeId);
 | 404 | Not Found | `ApiException` |
 
 
-# Delete Reason Code
+# Create Reason Code
 
-This method gives a merchant the option to delete one reason code from the Churn Reason Codes. This code will be immediately removed. This action is not reversable.
+# Reason Codes Intro
+
+ReasonCodes are a way to gain a high level view of why your customers are cancelling the subcription to your product or service.
+
+Add a set of churn reason codes to be displayed in-app and/or the Chargify Billing Portal. As your subscribers decide to cancel their subscription, learn why they decided to cancel.
+
+## Reason Code Documentation
+
+Full documentation on how Reason Codes operate within Chargify can be located under the following links.
+
+[Churn Reason Codes](https://chargify.zendesk.com/hc/en-us/articles/4407896775579#churn-reason-codes)
+
+## Create Reason Code
+
+This method gives a merchant the option to create a reason codes for a given Site.
 
 ```php
-function deleteReasonCode(int $reasonCodeId): ?ReasonCodesJsonResponse
+function createReasonCode(?CreateReasonCodeRequest $body = null): ?ReasonCodeResponse
 ```
 
 ## Parameters
 
 | Parameter | Type | Tags | Description |
 |  --- | --- | --- | --- |
-| `reasonCodeId` | `int` | Template, Required | The Chargify id of the reason code |
+| `body` | [`?CreateReasonCodeRequest`](../../doc/models/create-reason-code-request.md) | Body, Optional | - |
 
 ## Response Type
 
-[`?ReasonCodesJsonResponse`](../../doc/models/reason-codes-json-response.md)
+[`?ReasonCodeResponse`](../../doc/models/reason-code-response.md)
 
 ## Example Usage
 
 ```php
-$reasonCodeId = 32;
+$body = CreateReasonCodeRequestBuilder::init(
+    CreateReasonCodeBuilder::init(
+        'NOTHANKYOU',
+        'No thank you!'
+    )
+        ->position(5)
+        ->build()
+)->build();
 
-$result = $reasonCodesController->deleteReasonCode($reasonCodeId);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "ok": "ok"
-}
+$result = $reasonCodesController->createReasonCode($body);
 ```
 
 ## Errors
 
 | HTTP Status Code | Error Description | Exception Class |
 |  --- | --- | --- |
-| 404 | Not Found | `ApiException` |
+| 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
 

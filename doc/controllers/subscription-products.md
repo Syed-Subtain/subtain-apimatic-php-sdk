@@ -10,8 +10,74 @@ $subscriptionProductsController = $client->getSubscriptionProductsController();
 
 ## Methods
 
-* [Migrate Subscription Product](../../doc/controllers/subscription-products.md#migrate-subscription-product)
 * [Preview Subscription Product Migration](../../doc/controllers/subscription-products.md#preview-subscription-product-migration)
+* [Migrate Subscription Product](../../doc/controllers/subscription-products.md#migrate-subscription-product)
+
+
+# Preview Subscription Product Migration
+
+## Previewing a future date
+
+It is also possible to preview the migration for a date in the future, as long as it's still within the subscription's current billing period, by passing a `proration_date` along with the request (eg: `"proration_date": "2020-12-18T18:25:43.511Z"`).
+
+This will calculate the prorated adjustment, charge, payment and credit applied values assuming the migration is done at that date in the future as opposed to right now.
+
+```php
+function previewSubscriptionProductMigration(
+    string $subscriptionId,
+    ?SubscriptionMigrationPreviewRequest $body = null
+): ?SubscriptionMigrationPreviewResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `subscriptionId` | `string` | Template, Required | The Chargify id of the subscription |
+| `body` | [`?SubscriptionMigrationPreviewRequest`](../../doc/models/subscription-migration-preview-request.md) | Body, Optional | - |
+
+## Response Type
+
+[`?SubscriptionMigrationPreviewResponse`](../../doc/models/subscription-migration-preview-response.md)
+
+## Example Usage
+
+```php
+$subscriptionId = 'subscription_id0';
+
+$body = SubscriptionMigrationPreviewRequestBuilder::init(
+    SubscriptionMigrationPreviewOptionsBuilder::init()
+        ->includeTrial(false)
+        ->includeInitialCharge(false)
+        ->includeCoupons(true)
+        ->preservePeriod(false)
+        ->build()
+)->build();
+
+$result = $subscriptionProductsController->previewSubscriptionProductMigration(
+    $subscriptionId,
+    $body
+);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "migration": {
+    "prorated_adjustment_in_cents": 0,
+    "charge_in_cents": 5000,
+    "payment_due_in_cents": 0,
+    "credit_applied_in_cents": 0
+  }
+}
+```
+
+## Errors
+
+| HTTP Status Code | Error Description | Exception Class |
+|  --- | --- | --- |
+| 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
 
 
 # Migrate Subscription Product
@@ -232,72 +298,6 @@ $result = $subscriptionProductsController->migrateSubscriptionProduct(
       "billing_address_2": "Apt. 10",
       "payment_type": "credit_card"
     }
-  }
-}
-```
-
-## Errors
-
-| HTTP Status Code | Error Description | Exception Class |
-|  --- | --- | --- |
-| 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
-
-
-# Preview Subscription Product Migration
-
-## Previewing a future date
-
-It is also possible to preview the migration for a date in the future, as long as it's still within the subscription's current billing period, by passing a `proration_date` along with the request (eg: `"proration_date": "2020-12-18T18:25:43.511Z"`).
-
-This will calculate the prorated adjustment, charge, payment and credit applied values assuming the migration is done at that date in the future as opposed to right now.
-
-```php
-function previewSubscriptionProductMigration(
-    string $subscriptionId,
-    ?SubscriptionMigrationPreviewRequest $body = null
-): ?SubscriptionMigrationPreviewResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `subscriptionId` | `string` | Template, Required | The Chargify id of the subscription |
-| `body` | [`?SubscriptionMigrationPreviewRequest`](../../doc/models/subscription-migration-preview-request.md) | Body, Optional | - |
-
-## Response Type
-
-[`?SubscriptionMigrationPreviewResponse`](../../doc/models/subscription-migration-preview-response.md)
-
-## Example Usage
-
-```php
-$subscriptionId = 'subscription_id0';
-
-$body = SubscriptionMigrationPreviewRequestBuilder::init(
-    SubscriptionMigrationPreviewOptionsBuilder::init()
-        ->includeTrial(false)
-        ->includeInitialCharge(false)
-        ->includeCoupons(true)
-        ->preservePeriod(false)
-        ->build()
-)->build();
-
-$result = $subscriptionProductsController->previewSubscriptionProductMigration(
-    $subscriptionId,
-    $body
-);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "migration": {
-    "prorated_adjustment_in_cents": 0,
-    "charge_in_cents": 5000,
-    "payment_due_in_cents": 0,
-    "credit_applied_in_cents": 0
   }
 }
 ```

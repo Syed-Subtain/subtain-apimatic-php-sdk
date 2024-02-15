@@ -32,6 +32,45 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class WebhooksController extends BaseController
 {
     /**
+     * Posting to the replay endpoint does not immediately resend the webhooks. They are added to a queue
+     * and will be sent as soon as possible, depending on available system resources.
+     *
+     * You may submit an array of up to 1000 webhook IDs to replay in the request.
+     *
+     * @param ReplayWebhooksRequest|null $body
+     *
+     * @return ReplayWebhooksResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function replayWebhooks(?ReplayWebhooksRequest $body = null): ?ReplayWebhooksResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/webhooks/replay.json')
+            ->auth('BasicAuth')
+            ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
+
+        $_resHandler = $this->responseHandler()->type(ReplayWebhooksResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This method returns created endpoints for site.
+     *
+     * @return Endpoint[]|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listEndpoints(): ?array
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/endpoints.json')->auth('BasicAuth');
+
+        $_resHandler = $this->responseHandler()->type(Endpoint::class, 1);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * ## Webhooks Intro
      *
      * The Webhooks API allows you to view a list of all webhooks and to selectively resend individual or
@@ -65,7 +104,7 @@ class WebhooksController extends BaseController
     public function listWebhooks(array $options): ?array
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/webhooks.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 QueryParam::init('status', $options)
                     ->commaSeparated()
@@ -99,33 +138,10 @@ class WebhooksController extends BaseController
     public function enableWebhooks(?EnableWebhooksRequest $body = null): ?EnableWebhooksResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/webhooks/settings.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()->type(EnableWebhooksResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Posting to the replay endpoint does not immediately resend the webhooks. They are added to a queue
-     * and will be sent as soon as possible, depending on available system resources.
-     *
-     * You may submit an array of up to 1000 webhook IDs to replay in the request.
-     *
-     * @param ReplayWebhooksRequest|null $body
-     *
-     * @return ReplayWebhooksResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function replayWebhooks(?ReplayWebhooksRequest $body = null): ?ReplayWebhooksResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/webhooks/replay.json')
-            ->auth('global')
-            ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
-
-        $_resHandler = $this->responseHandler()->type(ReplayWebhooksResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -147,7 +163,7 @@ class WebhooksController extends BaseController
     public function createEndpoint(?UpdateEndpointRequest $body = null): ?EndpointResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/endpoints.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
@@ -156,22 +172,6 @@ class WebhooksController extends BaseController
                 ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
             )
             ->type(EndpointResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This method returns created endpoints for site.
-     *
-     * @return Endpoint[]|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listEndpoints(): ?array
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/endpoints.json')->auth('global');
-
-        $_resHandler = $this->responseHandler()->type(Endpoint::class, 1);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -200,7 +200,7 @@ class WebhooksController extends BaseController
     public function updateEndpoint(int $endpointId, ?UpdateEndpointRequest $body = null): ?EndpointResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/endpoints/{endpoint_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('endpoint_id', $endpointId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),

@@ -12,11 +12,11 @@ $customersController = $client->getCustomersController();
 
 * [Create Customer](../../doc/controllers/customers.md#create-customer)
 * [List Customers](../../doc/controllers/customers.md#list-customers)
+* [Read Customer by Reference](../../doc/controllers/customers.md#read-customer-by-reference)
+* [List Customer Subscriptions](../../doc/controllers/customers.md#list-customer-subscriptions)
 * [Read Customer](../../doc/controllers/customers.md#read-customer)
 * [Update Customer](../../doc/controllers/customers.md#update-customer)
 * [Delete Customer](../../doc/controllers/customers.md#delete-customer)
-* [Read Customer by Reference](../../doc/controllers/customers.md#read-customer-by-reference)
-* [List Customer Subscriptions](../../doc/controllers/customers.md#list-customer-subscriptions)
 
 
 # Create Customer
@@ -155,8 +155,8 @@ function listCustomers(array $options): ?array
 | Parameter | Type | Tags | Description |
 |  --- | --- | --- | --- |
 | `direction` | string([SortingDirection](../../doc/models/sorting-direction.md))\|null | Query, Optional | This is a container for one-of cases. |
-| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`.<br>**Default**: `1`<br>**Constraints**: `>= 1` |
-| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 50. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`.<br>**Default**: `50`<br>**Constraints**: `<= 200` |
+| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`. |
+| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 50. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`. |
 | `dateField` | [`?string(BasicDateField)`](../../doc/models/basic-date-field.md) | Query, Optional | The type of filter you would like to apply to your search.<br>Use in query: `date_field=created_at`. |
 | `startDate` | `?string` | Query, Optional | The start date (format YYYY-MM-DD) with which to filter the date_field. Returns subscriptions with a timestamp at or after midnight (12:00:00 AM) in your site’s time zone on the date specified. |
 | `endDate` | `?string` | Query, Optional | The end date (format YYYY-MM-DD) with which to filter the date_field. Returns subscriptions with a timestamp up to and including 11:59:59PM in your site’s time zone on the date specified. |
@@ -262,6 +262,60 @@ $result = $customersController->listCustomers($collect);
     }
   }
 ]
+```
+
+
+# Read Customer by Reference
+
+Use this method to return the customer object if you have the unique **Reference ID (Your App)** value handy. It will return a single match.
+
+```php
+function readCustomerByReference(string $reference): ?CustomerResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `reference` | `string` | Query, Required | Customer reference |
+
+## Response Type
+
+[`?CustomerResponse`](../../doc/models/customer-response.md)
+
+## Example Usage
+
+```php
+$reference = 'reference4';
+
+$result = $customersController->readCustomerByReference($reference);
+```
+
+
+# List Customer Subscriptions
+
+This method lists all subscriptions that belong to a customer.
+
+```php
+function listCustomerSubscriptions(int $customerId): ?array
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `customerId` | `int` | Template, Required | The Chargify id of the customer |
+
+## Response Type
+
+[`?(SubscriptionResponse[])`](../../doc/models/subscription-response.md)
+
+## Example Usage
+
+```php
+$customerId = 150;
+
+$result = $customersController->listCustomerSubscriptions($customerId);
 ```
 
 
@@ -393,59 +447,5 @@ function deleteCustomer(int $id): void
 $id = 112;
 
 $customersController->deleteCustomer($id);
-```
-
-
-# Read Customer by Reference
-
-Use this method to return the customer object if you have the unique **Reference ID (Your App)** value handy. It will return a single match.
-
-```php
-function readCustomerByReference(string $reference): ?CustomerResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `reference` | `string` | Query, Required | Customer reference |
-
-## Response Type
-
-[`?CustomerResponse`](../../doc/models/customer-response.md)
-
-## Example Usage
-
-```php
-$reference = 'reference4';
-
-$result = $customersController->readCustomerByReference($reference);
-```
-
-
-# List Customer Subscriptions
-
-This method lists all subscriptions that belong to a customer.
-
-```php
-function listCustomerSubscriptions(int $customerId): ?array
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `customerId` | `int` | Template, Required | The Chargify id of the customer |
-
-## Response Type
-
-[`?(SubscriptionResponse[])`](../../doc/models/subscription-response.md)
-
-## Example Usage
-
-```php
-$customerId = 150;
-
-$result = $customersController->listCustomerSubscriptions($customerId);
 ```
 

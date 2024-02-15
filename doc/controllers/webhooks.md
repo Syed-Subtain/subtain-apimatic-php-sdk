@@ -10,12 +10,101 @@ $webhooksController = $client->getWebhooksController();
 
 ## Methods
 
+* [Replay Webhooks](../../doc/controllers/webhooks.md#replay-webhooks)
+* [List Endpoints](../../doc/controllers/webhooks.md#list-endpoints)
 * [List Webhooks](../../doc/controllers/webhooks.md#list-webhooks)
 * [Enable Webhooks](../../doc/controllers/webhooks.md#enable-webhooks)
-* [Replay Webhooks](../../doc/controllers/webhooks.md#replay-webhooks)
 * [Create Endpoint](../../doc/controllers/webhooks.md#create-endpoint)
-* [List Endpoints](../../doc/controllers/webhooks.md#list-endpoints)
 * [Update Endpoint](../../doc/controllers/webhooks.md#update-endpoint)
+
+
+# Replay Webhooks
+
+Posting to the replay endpoint does not immediately resend the webhooks. They are added to a queue and will be sent as soon as possible, depending on available system resources.
+
+You may submit an array of up to 1000 webhook IDs to replay in the request.
+
+```php
+function replayWebhooks(?ReplayWebhooksRequest $body = null): ?ReplayWebhooksResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `body` | [`?ReplayWebhooksRequest`](../../doc/models/replay-webhooks-request.md) | Body, Optional | - |
+
+## Response Type
+
+[`?ReplayWebhooksResponse`](../../doc/models/replay-webhooks-response.md)
+
+## Example Usage
+
+```php
+$body = ReplayWebhooksRequestBuilder::init(
+    [
+        123456789,
+        123456788
+    ]
+)->build();
+
+$result = $webhooksController->replayWebhooks($body);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "status": "ok"
+}
+```
+
+
+# List Endpoints
+
+This method returns created endpoints for site.
+
+```php
+function listEndpoints(): ?array
+```
+
+## Response Type
+
+[`?(Endpoint[])`](../../doc/models/endpoint.md)
+
+## Example Usage
+
+```php
+$result = $webhooksController->listEndpoints();
+```
+
+## Example Response *(as JSON)*
+
+```json
+[
+  {
+    "id": 11,
+    "url": "https://foobar.com/webhooks",
+    "site_id": 1,
+    "status": "enabled",
+    "webhook_subscriptions": [
+      "payment_success",
+      "payment_failure"
+    ]
+  },
+  {
+    "id": 12,
+    "url": "https:/example.com/webhooks",
+    "site_id": 1,
+    "status": "enabled",
+    "webhook_subscriptions": [
+      "payment_success",
+      "payment_failure",
+      "refund_failure"
+    ]
+  }
+]
+```
 
 
 # List Webhooks
@@ -46,8 +135,8 @@ function listWebhooks(array $options): ?array
 | `status` | [`?string(WebhookStatus)`](../../doc/models/webhook-status.md) | Query, Optional | Webhooks with matching status would be returned. |
 | `sinceDate` | `?string` | Query, Optional | Format YYYY-MM-DD. Returns Webhooks with the created_at date greater than or equal to the one specified. |
 | `untilDate` | `?string` | Query, Optional | Format YYYY-MM-DD. Returns Webhooks with the created_at date less than or equal to the one specified. |
-| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`.<br>**Default**: `1`<br>**Constraints**: `>= 1` |
-| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`.<br>**Default**: `20`<br>**Constraints**: `<= 200` |
+| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`. |
+| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`. |
 | `order` | [`?string(WebhookOrder)`](../../doc/models/webhook-order.md) | Query, Optional | The order in which the Webhooks are returned. |
 | `subscription` | `?int` | Query, Optional | The Chargify id of a subscription you'd like to filter for |
 
@@ -143,48 +232,6 @@ $result = $webhooksController->enableWebhooks($body);
 ```
 
 
-# Replay Webhooks
-
-Posting to the replay endpoint does not immediately resend the webhooks. They are added to a queue and will be sent as soon as possible, depending on available system resources.
-
-You may submit an array of up to 1000 webhook IDs to replay in the request.
-
-```php
-function replayWebhooks(?ReplayWebhooksRequest $body = null): ?ReplayWebhooksResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `body` | [`?ReplayWebhooksRequest`](../../doc/models/replay-webhooks-request.md) | Body, Optional | - |
-
-## Response Type
-
-[`?ReplayWebhooksResponse`](../../doc/models/replay-webhooks-response.md)
-
-## Example Usage
-
-```php
-$body = ReplayWebhooksRequestBuilder::init(
-    [
-        123456789,
-        123456788
-    ]
-)->build();
-
-$result = $webhooksController->replayWebhooks($body);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "status": "ok"
-}
-```
-
-
 # Create Endpoint
 
 The Chargify API allows you to create an endpoint and assign a list of webhooks subscriptions (events) to it.
@@ -244,53 +291,6 @@ $result = $webhooksController->createEndpoint($body);
 | HTTP Status Code | Error Description | Exception Class |
 |  --- | --- | --- |
 | 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
-
-
-# List Endpoints
-
-This method returns created endpoints for site.
-
-```php
-function listEndpoints(): ?array
-```
-
-## Response Type
-
-[`?(Endpoint[])`](../../doc/models/endpoint.md)
-
-## Example Usage
-
-```php
-$result = $webhooksController->listEndpoints();
-```
-
-## Example Response *(as JSON)*
-
-```json
-[
-  {
-    "id": 11,
-    "url": "https://foobar.com/webhooks",
-    "site_id": 1,
-    "status": "enabled",
-    "webhook_subscriptions": [
-      "payment_success",
-      "payment_failure"
-    ]
-  },
-  {
-    "id": 12,
-    "url": "https:/example.com/webhooks",
-    "site_id": 1,
-    "status": "enabled",
-    "webhook_subscriptions": [
-      "payment_success",
-      "payment_failure",
-      "refund_failure"
-    ]
-  }
-]
-```
 
 
 # Update Endpoint

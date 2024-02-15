@@ -34,6 +34,35 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class SubscriptionInvoiceAccountController extends BaseController
 {
     /**
+     * Credit will be added to the subscription in the amount specified in the request body. The credit is
+     * subsequently applied to the next generated invoice.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param IssueServiceCreditRequest|null $body
+     *
+     * @return ServiceCredit|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function issueServiceCredit(string $subscriptionId, ?IssueServiceCreditRequest $body = null): ?ServiceCredit
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::POST,
+            '/subscriptions/{subscription_id}/service_credits.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()->type(ServiceCredit::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * Returns the `balance_in_cents` of the Subscription's Pending Discount, Service Credit, and
      * Prepayment accounts, as well as the sum of the Subscription's open, payable invoices.
      *
@@ -48,11 +77,81 @@ class SubscriptionInvoiceAccountController extends BaseController
         $_reqBuilder = $this->requestBuilder(
             RequestMethod::GET,
             '/subscriptions/{subscription_id}/account_balances.json'
-        )->auth('global')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
+        )->auth('BasicAuth')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
 
         $_resHandler = $this->responseHandler()->type(AccountBalances::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This request will list a subscription's prepayments.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return PrepaymentsResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listPrepayments(array $options): ?PrepaymentsResponse
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::GET,
+            '/subscriptions/{subscription_id}/prepayments.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $options)->extract('subscriptionId')->required(),
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
+                QueryParam::init('filter[date_field]', $options)
+                    ->commaSeparated()
+                    ->extract('filterDateField')
+                    ->serializeBy([BasicDateField::class, 'checkValue']),
+                QueryParam::init('filter[start_date]', $options)->commaSeparated()->extract('filterStartDate'),
+                QueryParam::init('filter[end_date]', $options)->commaSeparated()->extract('filterEndDate')
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('401', ErrorType::init('Unauthorized'))
+            ->throwErrorOn('403', ErrorType::init('Forbidden'))
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(PrepaymentsResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Credit will be removed from the subscription in the amount specified in the request body. The credit
+     * amount being deducted must be equal to or less than the current credit balance.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param DeductServiceCreditRequest|null $body
+     *
+     * @return void Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function deductServiceCredit(string $subscriptionId, ?DeductServiceCreditRequest $body = null): void
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::POST,
+            '/subscriptions/{subscription_id}/service_credit_deductions.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn(
+                '422',
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+            );
+
+        $this->execute($_reqBuilder, $_resHandler);
     }
 
     /**
@@ -83,7 +182,7 @@ class SubscriptionInvoiceAccountController extends BaseController
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/prepayments.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -93,105 +192,6 @@ class SubscriptionInvoiceAccountController extends BaseController
         $_resHandler = $this->responseHandler()->type(CreatePrepaymentResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This request will list a subscription's prepayments.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return PrepaymentsResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listPrepayments(array $options): ?PrepaymentsResponse
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::GET,
-            '/subscriptions/{subscription_id}/prepayments.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $options)->extract('subscriptionId')->required(),
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
-                QueryParam::init('filter[date_field]', $options)
-                    ->commaSeparated()
-                    ->extract('filterDateField')
-                    ->serializeBy([BasicDateField::class, 'checkValue']),
-                QueryParam::init('filter[start_date]', $options)->commaSeparated()->extract('filterStartDate'),
-                QueryParam::init('filter[end_date]', $options)->commaSeparated()->extract('filterEndDate')
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('401', ErrorType::init('Unauthorized'))
-            ->throwErrorOn('403', ErrorType::init('Forbidden'))
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(PrepaymentsResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Credit will be added to the subscription in the amount specified in the request body. The credit is
-     * subsequently applied to the next generated invoice.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param IssueServiceCreditRequest|null $body
-     *
-     * @return ServiceCredit|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function issueServiceCredit(string $subscriptionId, ?IssueServiceCreditRequest $body = null): ?ServiceCredit
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::POST,
-            '/subscriptions/{subscription_id}/service_credits.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()->type(ServiceCredit::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Credit will be removed from the subscription in the amount specified in the request body. The credit
-     * amount being deducted must be equal to or less than the current credit balance.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param DeductServiceCreditRequest|null $body
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deductServiceCredit(string $subscriptionId, ?DeductServiceCreditRequest $body = null): void
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::POST,
-            '/subscriptions/{subscription_id}/service_credit_deductions.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn(
-                '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
-            );
-
-        $this->execute($_reqBuilder, $_resHandler);
     }
 
     /**
@@ -219,7 +219,7 @@ class SubscriptionInvoiceAccountController extends BaseController
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/prepayments/{prepayment_id}/refunds.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 TemplateParam::init('prepayment_id', $prepaymentId)->required(),

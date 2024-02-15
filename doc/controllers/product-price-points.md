@@ -10,17 +10,81 @@ $productPricePointsController = $client->getProductPricePointsController();
 
 ## Methods
 
-* [Create Product Price Point](../../doc/controllers/product-price-points.md#create-product-price-point)
 * [List Product Price Points](../../doc/controllers/product-price-points.md#list-product-price-points)
+* [Create Product Price Point](../../doc/controllers/product-price-points.md#create-product-price-point)
 * [Update Product Price Point](../../doc/controllers/product-price-points.md#update-product-price-point)
-* [Read Product Price Point](../../doc/controllers/product-price-points.md#read-product-price-point)
-* [Archive Product Price Point](../../doc/controllers/product-price-points.md#archive-product-price-point)
 * [Unarchive Product Price Point](../../doc/controllers/product-price-points.md#unarchive-product-price-point)
-* [Set Default Price Point for Product](../../doc/controllers/product-price-points.md#set-default-price-point-for-product)
 * [Create Product Price Points](../../doc/controllers/product-price-points.md#create-product-price-points)
 * [Create Product Currency Prices](../../doc/controllers/product-price-points.md#create-product-currency-prices)
+* [Archive Product Price Point](../../doc/controllers/product-price-points.md#archive-product-price-point)
+* [Set Default Price Point for Product](../../doc/controllers/product-price-points.md#set-default-price-point-for-product)
 * [Update Product Currency Prices](../../doc/controllers/product-price-points.md#update-product-currency-prices)
 * [List All Product Price Points](../../doc/controllers/product-price-points.md#list-all-product-price-points)
+* [Read Product Price Point](../../doc/controllers/product-price-points.md#read-product-price-point)
+
+
+# List Product Price Points
+
+Use this endpoint to retrieve a list of product price points.
+
+```php
+function listProductPricePoints(array $options): ?ListProductPricePointsResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
+| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`. |
+| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 10. The maximum allowed values is 200; any per_page value over 200 will be changed to 200. |
+| `currencyPrices` | `?bool` | Query, Optional | When fetching a product's price points, if you have defined multiple currencies at the site level, you can optionally pass the ?currency_prices=true query param to include an array of currency price data in the response. If the product price point is set to use_site_exchange_rate: true, it will return pricing based on the current exchange rate. If the flag is set to false, it will return all of the defined prices for each currency. |
+| `filterType` | [`?(string(PricePointType)[])`](../../doc/models/price-point-type.md) | Query, Optional | Use in query: `filter[type]=catalog,default`. |
+
+## Response Type
+
+[`?ListProductPricePointsResponse`](../../doc/models/list-product-price-points-response.md)
+
+## Example Usage
+
+```php
+$collect = Liquid error: Value cannot be null. (Parameter 'key')[
+    'product_id' => 202,
+    'page' => 2,
+    'per_page' => 10
+];
+
+$result = $productPricePointsController->listProductPricePoints($collect);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "price_points": [
+    {
+      "id": 283,
+      "name": "Educational",
+      "handle": "educational",
+      "price_in_cents": 1000,
+      "interval": 1,
+      "interval_unit": "month",
+      "trial_price_in_cents": 4900,
+      "trial_interval": 1,
+      "trial_interval_unit": "month",
+      "trial_type": "payment_expected",
+      "initial_charge_in_cents": 120000,
+      "initial_charge_after_trial": false,
+      "expiration_interval": 12,
+      "expiration_interval_unit": "month",
+      "product_id": 901,
+      "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
+      "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
+      "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
+    }
+  ]
+}
+```
 
 
 # Create Product Price Point
@@ -103,70 +167,6 @@ $result = $productPricePointsController->createProductPricePoint(
 ```
 
 
-# List Product Price Points
-
-Use this endpoint to retrieve a list of product price points.
-
-```php
-function listProductPricePoints(array $options): ?ListProductPricePointsResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
-| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`.<br>**Default**: `1`<br>**Constraints**: `>= 1` |
-| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 10. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>**Default**: `10`<br>**Constraints**: `<= 200` |
-| `currencyPrices` | `?bool` | Query, Optional | When fetching a product's price points, if you have defined multiple currencies at the site level, you can optionally pass the ?currency_prices=true query param to include an array of currency price data in the response. If the product price point is set to use_site_exchange_rate: true, it will return pricing based on the current exchange rate. If the flag is set to false, it will return all of the defined prices for each currency. |
-| `filterType` | [`?(string(PricePointType)[])`](../../doc/models/price-point-type.md) | Query, Optional | Use in query: `filter[type]=catalog,default`. |
-
-## Response Type
-
-[`?ListProductPricePointsResponse`](../../doc/models/list-product-price-points-response.md)
-
-## Example Usage
-
-```php
-$collect = Liquid error: Value cannot be null. (Parameter 'key')[
-    'product_id' => 202,
-    'page' => 2,
-    'per_page' => 10
-];
-
-$result = $productPricePointsController->listProductPricePoints($collect);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "price_points": [
-    {
-      "id": 283,
-      "name": "Educational",
-      "handle": "educational",
-      "price_in_cents": 1000,
-      "interval": 1,
-      "interval_unit": "month",
-      "trial_price_in_cents": 4900,
-      "trial_interval": 1,
-      "trial_interval_unit": "month",
-      "trial_type": "payment_expected",
-      "initial_charge_in_cents": 120000,
-      "initial_charge_after_trial": false,
-      "expiration_interval": 12,
-      "expiration_interval_unit": "month",
-      "product_id": 901,
-      "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
-      "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
-      "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
-    }
-  ]
-}
-```
-
-
 # Update Product Price Point
 
 Use this endpoint to update a product price point.
@@ -242,131 +242,6 @@ $result = $productPricePointsController->updateProductPricePoint(
 ```
 
 
-# Read Product Price Point
-
-Use this endpoint to retrieve details for a specific product price point.
-
-```php
-function readProductPricePoint(
-    int $productId,
-    int $pricePointId,
-    ?bool $currencyPrices = null
-): ?ProductPricePointResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
-| `pricePointId` | `int` | Template, Required | The id or handle of the price point. When using the handle, it must be prefixed with `handle:` |
-| `currencyPrices` | `?bool` | Query, Optional | When fetching a product's price points, if you have defined multiple currencies at the site level, you can optionally pass the ?currency_prices=true query param to include an array of currency price data in the response. If the product price point is set to use_site_exchange_rate: true, it will return pricing based on the current exchange rate. If the flag is set to false, it will return all of the defined prices for each currency. |
-
-## Response Type
-
-[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
-
-## Example Usage
-
-```php
-$productId = 202;
-
-$pricePointId = 10;
-
-$result = $productPricePointsController->readProductPricePoint(
-    $productId,
-    $pricePointId
-);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "price_point": {
-    "id": 283,
-    "name": "Educational",
-    "handle": "educational",
-    "price_in_cents": 1000,
-    "interval": 1,
-    "interval_unit": "month",
-    "trial_price_in_cents": 4900,
-    "trial_interval": 1,
-    "trial_interval_unit": "month",
-    "trial_type": "payment_expected",
-    "initial_charge_in_cents": 120000,
-    "initial_charge_after_trial": false,
-    "expiration_interval": 12,
-    "expiration_interval_unit": "month",
-    "product_id": 901,
-    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
-    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
-    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
-  }
-}
-```
-
-
-# Archive Product Price Point
-
-Use this endpoint to archive a product price point.
-
-```php
-function archiveProductPricePoint(int $productId, int $pricePointId): ?ProductPricePointResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
-| `pricePointId` | `int` | Template, Required | The id or handle of the price point. When using the handle, it must be prefixed with `handle:` |
-
-## Response Type
-
-[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
-
-## Example Usage
-
-```php
-$productId = 202;
-
-$pricePointId = 10;
-
-$result = $productPricePointsController->archiveProductPricePoint(
-    $productId,
-    $pricePointId
-);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "price_point": {
-    "id": 283,
-    "name": "Educational",
-    "handle": "educational",
-    "price_in_cents": 1000,
-    "interval": 1,
-    "interval_unit": "month",
-    "trial_price_in_cents": 4900,
-    "trial_interval": 1,
-    "trial_interval_unit": "month",
-    "trial_type": "payment_expected",
-    "initial_charge_in_cents": 120000,
-    "initial_charge_after_trial": false,
-    "expiration_interval": 12,
-    "expiration_interval_unit": "month",
-    "product_id": 901,
-    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
-    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
-    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
-  }
-}
-```
-
-
 # Unarchive Product Price Point
 
 Use this endpoint to unarchive an archived product price point.
@@ -394,68 +269,6 @@ $productId = 202;
 $pricePointId = 10;
 
 $result = $productPricePointsController->unarchiveProductPricePoint(
-    $productId,
-    $pricePointId
-);
-```
-
-## Example Response *(as JSON)*
-
-```json
-{
-  "price_point": {
-    "id": 283,
-    "name": "Educational",
-    "handle": "educational",
-    "price_in_cents": 1000,
-    "interval": 1,
-    "interval_unit": "month",
-    "trial_price_in_cents": 4900,
-    "trial_interval": 1,
-    "trial_interval_unit": "month",
-    "trial_type": "payment_expected",
-    "initial_charge_in_cents": 120000,
-    "initial_charge_after_trial": false,
-    "expiration_interval": 12,
-    "expiration_interval_unit": "month",
-    "product_id": 901,
-    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
-    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
-    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
-  }
-}
-```
-
-
-# Set Default Price Point for Product
-
-Use this endpoint to make a product price point the default for the product.
-
-Note: Custom product price points are not able to be set as the default for a product.
-
-```php
-function setDefaultPricePointForProduct(int $productId, int $pricePointId): ?ProductPricePointResponse
-```
-
-## Parameters
-
-| Parameter | Type | Tags | Description |
-|  --- | --- | --- | --- |
-| `productId` | `int` | Template, Required | The Chargify id of the product to which the price point belongs |
-| `pricePointId` | `int` | Template, Required | The Chargify id of the product price point |
-
-## Response Type
-
-[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
-
-## Example Usage
-
-```php
-$productId = 202;
-
-$pricePointId = 10;
-
-$result = $productPricePointsController->setDefaultPricePointForProduct(
     $productId,
     $pricePointId
 );
@@ -653,6 +466,128 @@ $result = $productPricePointsController->createProductCurrencyPrices(
 | 422 | Unprocessable Entity (WebDAV) | [`ErrorMapResponseException`](../../doc/models/error-map-response-exception.md) |
 
 
+# Archive Product Price Point
+
+Use this endpoint to archive a product price point.
+
+```php
+function archiveProductPricePoint(int $productId, int $pricePointId): ?ProductPricePointResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
+| `pricePointId` | `int` | Template, Required | The id or handle of the price point. When using the handle, it must be prefixed with `handle:` |
+
+## Response Type
+
+[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
+
+## Example Usage
+
+```php
+$productId = 202;
+
+$pricePointId = 10;
+
+$result = $productPricePointsController->archiveProductPricePoint(
+    $productId,
+    $pricePointId
+);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "price_point": {
+    "id": 283,
+    "name": "Educational",
+    "handle": "educational",
+    "price_in_cents": 1000,
+    "interval": 1,
+    "interval_unit": "month",
+    "trial_price_in_cents": 4900,
+    "trial_interval": 1,
+    "trial_interval_unit": "month",
+    "trial_type": "payment_expected",
+    "initial_charge_in_cents": 120000,
+    "initial_charge_after_trial": false,
+    "expiration_interval": 12,
+    "expiration_interval_unit": "month",
+    "product_id": 901,
+    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
+    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
+    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
+  }
+}
+```
+
+
+# Set Default Price Point for Product
+
+Use this endpoint to make a product price point the default for the product.
+
+Note: Custom product price points are not able to be set as the default for a product.
+
+```php
+function setDefaultPricePointForProduct(int $productId, int $pricePointId): ?ProductPricePointResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `productId` | `int` | Template, Required | The Chargify id of the product to which the price point belongs |
+| `pricePointId` | `int` | Template, Required | The Chargify id of the product price point |
+
+## Response Type
+
+[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
+
+## Example Usage
+
+```php
+$productId = 202;
+
+$pricePointId = 10;
+
+$result = $productPricePointsController->setDefaultPricePointForProduct(
+    $productId,
+    $pricePointId
+);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "price_point": {
+    "id": 283,
+    "name": "Educational",
+    "handle": "educational",
+    "price_in_cents": 1000,
+    "interval": 1,
+    "interval_unit": "month",
+    "trial_price_in_cents": 4900,
+    "trial_interval": 1,
+    "trial_interval_unit": "month",
+    "trial_type": "payment_expected",
+    "initial_charge_in_cents": 120000,
+    "initial_charge_after_trial": false,
+    "expiration_interval": 12,
+    "expiration_interval_unit": "month",
+    "product_id": 901,
+    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
+    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
+    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
+  }
+}
+```
+
+
 # Update Product Currency Prices
 
 This endpoint allows you to update the `price`s of currency prices for a given currency that exists on the product price point.
@@ -741,8 +676,8 @@ function listAllProductPricePoints(array $options): ?ListProductPricePointsRespo
 | `filterStartDatetime` | `?string` | Query, Optional | The start date and time (format YYYY-MM-DD HH:MM:SS) with which to filter the date_field. Returns price points with a timestamp at or after exact time provided in query. You can specify timezone in query - otherwise your site's time zone will be used. If provided, this parameter will be used instead of start_date. |
 | `filterType` | [`?string(PricePointType)`](../../doc/models/price-point-type.md) | Query, Optional | Allows fetching price points with matching type. Use in query: `filter[type]=catalog,custom`. |
 | `mInclude` | [`?string(ListProductsPricePointsInclude)`](../../doc/models/list-products-price-points-include.md) | Query, Optional | Allows including additional data in the response. Use in query: `include=currency_prices`. |
-| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`.<br>**Default**: `1`<br>**Constraints**: `>= 1` |
-| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`.<br>**Default**: `20`<br>**Constraints**: `<= 200` |
+| `page` | `?int` | Query, Optional | Result records are organized in pages. By default, the first page of results is displayed. The page parameter specifies a page number of results to fetch. You can start navigating through the pages to consume the results. You do this by passing in a page parameter. Retrieve the next page by adding ?page=2 to the query string. If there are no results to return, then an empty result set will be returned.<br>Use in query `page=1`. |
+| `perPage` | `?int` | Query, Optional | This parameter indicates how many records to fetch in each request. Default value is 20. The maximum allowed values is 200; any per_page value over 200 will be changed to 200.<br>Use in query `per_page=200`. |
 
 ## Response Type
 
@@ -795,4 +730,69 @@ $result = $productPricePointsController->listAllProductPricePoints($collect);
 | HTTP Status Code | Error Description | Exception Class |
 |  --- | --- | --- |
 | 422 | Unprocessable Entity (WebDAV) | [`ErrorListResponseException`](../../doc/models/error-list-response-exception.md) |
+
+
+# Read Product Price Point
+
+Use this endpoint to retrieve details for a specific product price point.
+
+```php
+function readProductPricePoint(
+    int $productId,
+    int $pricePointId,
+    ?bool $currencyPrices = null
+): ?ProductPricePointResponse
+```
+
+## Parameters
+
+| Parameter | Type | Tags | Description |
+|  --- | --- | --- | --- |
+| `productId` | `int` | Template, Required | The id or handle of the product. When using the handle, it must be prefixed with `handle:` |
+| `pricePointId` | `int` | Template, Required | The id or handle of the price point. When using the handle, it must be prefixed with `handle:` |
+| `currencyPrices` | `?bool` | Query, Optional | When fetching a product's price points, if you have defined multiple currencies at the site level, you can optionally pass the ?currency_prices=true query param to include an array of currency price data in the response. If the product price point is set to use_site_exchange_rate: true, it will return pricing based on the current exchange rate. If the flag is set to false, it will return all of the defined prices for each currency. |
+
+## Response Type
+
+[`?ProductPricePointResponse`](../../doc/models/product-price-point-response.md)
+
+## Example Usage
+
+```php
+$productId = 202;
+
+$pricePointId = 10;
+
+$result = $productPricePointsController->readProductPricePoint(
+    $productId,
+    $pricePointId
+);
+```
+
+## Example Response *(as JSON)*
+
+```json
+{
+  "price_point": {
+    "id": 283,
+    "name": "Educational",
+    "handle": "educational",
+    "price_in_cents": 1000,
+    "interval": 1,
+    "interval_unit": "month",
+    "trial_price_in_cents": 4900,
+    "trial_interval": 1,
+    "trial_interval_unit": "month",
+    "trial_type": "payment_expected",
+    "initial_charge_in_cents": 120000,
+    "initial_charge_after_trial": false,
+    "expiration_interval": 12,
+    "expiration_interval_unit": "month",
+    "product_id": 901,
+    "archived_at": "Tue, 30 Oct 2018 18:49:47 EDT -04:00",
+    "created_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00",
+    "updated_at": "Tue, 23 Oct 2018 18:49:47 EDT -04:00"
+  }
+}
+```
 

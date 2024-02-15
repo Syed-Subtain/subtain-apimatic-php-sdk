@@ -25,6 +25,37 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class InsightsController extends BaseController
 {
     /**
+     * This endpoint returns your site's current MRR, including plan and usage breakouts.
+     *
+     * @deprecated
+     *
+     * @param \DateTime|null $atTime submit a timestamp in ISO8601 format to request MRR for a
+     *        historic time
+     * @param int|null $subscriptionId submit the id of a subscription in order to limit results
+     *
+     * @return MRRResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function readMrr(?\DateTime $atTime = null, ?int $subscriptionId = null): ?MRRResponse
+    {
+        trigger_error('Method ' . __METHOD__ . ' is deprecated.', E_USER_DEPRECATED);
+
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/mrr.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                QueryParam::init('at_time', $atTime)
+                    ->commaSeparated()
+                    ->serializeBy([DateTimeHelper::class, 'toRfc3339DateTime']),
+                QueryParam::init('subscription_id', $subscriptionId)->commaSeparated()
+            );
+
+        $_resHandler = $this->responseHandler()->type(MRRResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * The Stats API is a very basic view of some Site-level stats. This API call only answers with JSON
      * responses. An XML version is not provided.
      *
@@ -44,40 +75,9 @@ class InsightsController extends BaseController
      */
     public function readSiteStats(): ?SiteSummary
     {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/stats.json')->auth('global');
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/stats.json')->auth('BasicAuth');
 
         $_resHandler = $this->responseHandler()->type(SiteSummary::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This endpoint returns your site's current MRR, including plan and usage breakouts.
-     *
-     * @deprecated
-     *
-     * @param \DateTime|null $atTime submit a timestamp in ISO8601 format to request MRR for a
-     *        historic time
-     * @param int|null $subscriptionId submit the id of a subscription in order to limit results
-     *
-     * @return MRRResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function readMrr(?\DateTime $atTime = null, ?int $subscriptionId = null): ?MRRResponse
-    {
-        trigger_error('Method ' . __METHOD__ . ' is deprecated.', E_USER_DEPRECATED);
-
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/mrr.json')
-            ->auth('global')
-            ->parameters(
-                QueryParam::init('at_time', $atTime)
-                    ->commaSeparated()
-                    ->serializeBy([DateTimeHelper::class, 'toRfc3339DateTime']),
-                QueryParam::init('subscription_id', $subscriptionId)->commaSeparated()
-            );
-
-        $_resHandler = $this->responseHandler()->type(MRRResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -124,7 +124,7 @@ class InsightsController extends BaseController
         trigger_error('Method ' . __METHOD__ . ' is deprecated.', E_USER_DEPRECATED);
 
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/mrr_movements.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 QueryParam::init('subscription_id', $options)->commaSeparated()->extract('subscriptionId'),
                 QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
@@ -160,7 +160,7 @@ class InsightsController extends BaseController
         trigger_error('Method ' . __METHOD__ . ' is deprecated.', E_USER_DEPRECATED);
 
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscriptions_mrr.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 QueryParam::init('filter[subscription_ids]', $options)
                     ->commaSeparated()

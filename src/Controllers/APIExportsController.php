@@ -24,6 +24,25 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class APIExportsController extends BaseController
 {
     /**
+     * This API creates an invoices export and returns a batchjob object.
+     *
+     * @return BatchJobResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function exportInvoices(): ?BatchJobResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/invoices.json')->auth('BasicAuth');
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
+            ->type(BatchJobResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * This API returns an array of exported proforma invoices for a provided `batch_id`. Pay close
      * attention to pagination in order to control responses from the server.
      *
@@ -42,7 +61,7 @@ class APIExportsController extends BaseController
             RequestMethod::GET,
             '/api_exports/proforma_invoices/{batch_id}/rows.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('batch_id', $options)->extract('batchId')->required(),
                 QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 100),
@@ -52,124 +71,6 @@ class APIExportsController extends BaseController
         $_resHandler = $this->responseHandler()
             ->throwErrorOn('404', ErrorType::init('Not Found'))
             ->type(ProformaInvoice::class, 1);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API returns an array of exported invoices for a provided `batch_id`. Pay close attention to
-     * pagination in order to control responses from the server.
-     *
-     * Example: `GET https://{subdomain}.chargify.com/api_exports/invoices/123/rows?per_page=10000&page=1`.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return Invoice[]|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listExportedInvoices(array $options): ?array
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/invoices/{batch_id}/rows.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('batch_id', $options)->extract('batchId')->required(),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 100),
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(Invoice::class, 1);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API returns an array of exported subscriptions for a provided `batch_id`. Pay close attention
-     * to pagination in order to control responses from the server.
-     *
-     * Example: `GET https://{subdomain}.chargify.com/api_exports/subscriptions/123/rows?
-     * per_page=200&page=1`.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return Subscription[]|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listExportedSubscriptions(array $options): ?array
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/subscriptions/{batch_id}/rows.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('batch_id', $options)->extract('batchId')->required(),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 100),
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(Subscription::class, 1);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API creates a proforma invoices export and returns a batchjob object.
-     *
-     * It is only available for Relationship Invoicing architecture.
-     *
-     * @return BatchJobResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function exportProformaInvoices(): ?BatchJobResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/proforma_invoices.json')
-            ->auth('global');
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
-            ->type(BatchJobResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API creates an invoices export and returns a batchjob object.
-     *
-     * @return BatchJobResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function exportInvoices(): ?BatchJobResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/invoices.json')->auth('global');
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
-            ->type(BatchJobResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API creates a subscriptions export and returns a batchjob object.
-     *
-     * @return BatchJobResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function exportSubscriptions(): ?BatchJobResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/subscriptions.json')->auth('global');
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
-            ->type(BatchJobResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -186,29 +87,7 @@ class APIExportsController extends BaseController
     public function readProformaInvoicesExport(string $batchId): ?BatchJobResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/proforma_invoices/{batch_id}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('batch_id', $batchId)->required());
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(BatchJobResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This API returns a batchjob object for invoices export.
-     *
-     * @param string $batchId Id of a Batch Job.
-     *
-     * @return BatchJobResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function readInvoicesExport(string $batchId): ?BatchJobResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/invoices/{batch_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('batch_id', $batchId)->required());
 
         $_resHandler = $this->responseHandler()
@@ -230,11 +109,133 @@ class APIExportsController extends BaseController
     public function readSubscriptionsExport(string $batchId): ?BatchJobResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/subscriptions/{batch_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('batch_id', $batchId)->required());
 
         $_resHandler = $this->responseHandler()
             ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(BatchJobResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This API returns an array of exported subscriptions for a provided `batch_id`. Pay close attention
+     * to pagination in order to control responses from the server.
+     *
+     * Example: `GET https://{subdomain}.chargify.com/api_exports/subscriptions/123/rows?
+     * per_page=200&page=1`.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return Subscription[]|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listExportedSubscriptions(array $options): ?array
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/subscriptions/{batch_id}/rows.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('batch_id', $options)->extract('batchId')->required(),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 100),
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(Subscription::class, 1);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This API returns an array of exported invoices for a provided `batch_id`. Pay close attention to
+     * pagination in order to control responses from the server.
+     *
+     * Example: `GET https://{subdomain}.chargify.com/api_exports/invoices/123/rows?per_page=10000&page=1`.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return Invoice[]|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listExportedInvoices(array $options): ?array
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/invoices/{batch_id}/rows.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('batch_id', $options)->extract('batchId')->required(),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 100),
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(Invoice::class, 1);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This API creates a proforma invoices export and returns a batchjob object.
+     *
+     * It is only available for Relationship Invoicing architecture.
+     *
+     * @return BatchJobResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function exportProformaInvoices(): ?BatchJobResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/proforma_invoices.json')
+            ->auth('BasicAuth');
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
+            ->type(BatchJobResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This API returns a batchjob object for invoices export.
+     *
+     * @param string $batchId Id of a Batch Job.
+     *
+     * @return BatchJobResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function readInvoicesExport(string $batchId): ?BatchJobResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/api_exports/invoices/{batch_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('batch_id', $batchId)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(BatchJobResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This API creates a subscriptions export and returns a batchjob object.
+     *
+     * @return BatchJobResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function exportSubscriptions(): ?BatchJobResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/api_exports/subscriptions.json')
+            ->auth('BasicAuth');
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('409', ErrorType::init('Conflict', SingleErrorResponseException::class))
             ->type(BatchJobResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);

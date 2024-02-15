@@ -82,7 +82,7 @@ class CustomFieldsController extends BaseController
     public function createMetafields(string $resourceType, ?CreateMetafieldsRequest $body = null): ?array
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/{resource_type}/metafields.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $resourceType)
                     ->required()
@@ -97,37 +97,63 @@ class CustomFieldsController extends BaseController
     }
 
     /**
-     * This endpoint lists metafields associated with a site. The metafield description and usage is
-     * contained in the response.
+     * Use the following method to delete a metafield. This will remove the metafield from the Site.
      *
-     * @param array $options Array with all options for search
+     * Additionally, this will remove the metafield and associated metadata with all Subscriptions on the
+     * Site.
      *
-     * @return ListMetafieldsResponse|null Response from the API call
+     * @param string $resourceType the resource type to which the metafields belong
+     * @param string|null $name The name of the metafield to be deleted
+     *
+     * @return void Response from the API call
      *
      * @throws ApiException Thrown if API call fails
      */
-    public function listMetafields(array $options): ?ListMetafieldsResponse
+    public function deleteMetafield(string $resourceType, ?string $name = null): void
     {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/{resource_type}/metafields.json')
-            ->auth('global')
+        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/{resource_type}/metafields.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('resource_type', $resourceType)
+                    ->required()
+                    ->serializeBy([ResourceType::class, 'checkValue']),
+                QueryParam::init('name', $name)->commaSeparated()
+            );
+
+        $_resHandler = $this->responseHandler()->throwErrorOn('404', ErrorType::init('Not Found'));
+
+        $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This request will list all of the metadata belonging to a particular resource (ie. subscription,
+     * customer) that is specified.
+     *
+     * ## Metadata Data
+     *
+     * This endpoint will also display the current stats of your metadata to use as a tool for pagination.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return PaginatedMetadata|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function readMetadata(array $options): ?PaginatedMetadata
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/{resource_type}/{resource_id}/metadata.json')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $options)
                     ->extract('resourceType')
                     ->required()
                     ->serializeBy([ResourceType::class, 'checkValue']),
-                QueryParam::init('name', $options)->commaSeparated()->extract('name'),
+                TemplateParam::init('resource_id', $options)->extract('resourceId')->required(),
                 QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
-                QueryParam::init('direction', $options)
-                    ->commaSeparated()
-                    ->extract('direction')
-                    ->strictType(
-                        'anyOf(oneOf(SortingDirection),null)',
-                        ['\\AdvancedBillingLib\\Models\\SortingDirection::checkValue SortingDirection']
-                    )
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20)
             );
 
-        $_resHandler = $this->responseHandler()->type(ListMetafieldsResponse::class);
+        $_resHandler = $this->responseHandler()->type(PaginatedMetadata::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -154,7 +180,7 @@ class CustomFieldsController extends BaseController
         ?UpdateMetafieldsRequest $body = null
     ): ?array {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/{resource_type}/metafields.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $resourceType)
                     ->required()
@@ -168,35 +194,6 @@ class CustomFieldsController extends BaseController
         $_resHandler = $this->responseHandler()->type(Metafield::class, 1);
 
         return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Use the following method to delete a metafield. This will remove the metafield from the Site.
-     *
-     * Additionally, this will remove the metafield and associated metadata with all Subscriptions on the
-     * Site.
-     *
-     * @param string $resourceType the resource type to which the metafields belong
-     * @param string|null $name The name of the metafield to be deleted
-     *
-     * @return void Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deleteMetafield(string $resourceType, ?string $name = null): void
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/{resource_type}/metafields.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('resource_type', $resourceType)
-                    ->required()
-                    ->serializeBy([ResourceType::class, 'checkValue']),
-                QueryParam::init('name', $name)->commaSeparated()
-            );
-
-        $_resHandler = $this->responseHandler()->throwErrorOn('404', ErrorType::init('Not Found'));
-
-        $this->execute($_reqBuilder, $_resHandler);
     }
 
     /**
@@ -250,7 +247,7 @@ class CustomFieldsController extends BaseController
         ?CreateMetadataRequest $body = null
     ): ?array {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/{resource_type}/{resource_id}/metadata.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $resourceType)
                     ->required()
@@ -262,39 +259,6 @@ class CustomFieldsController extends BaseController
             );
 
         $_resHandler = $this->responseHandler()->type(Metadata::class, 1);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This request will list all of the metadata belonging to a particular resource (ie. subscription,
-     * customer) that is specified.
-     *
-     * ## Metadata Data
-     *
-     * This endpoint will also display the current stats of your metadata to use as a tool for pagination.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return PaginatedMetadata|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function readMetadata(array $options): ?PaginatedMetadata
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/{resource_type}/{resource_id}/metadata.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('resource_type', $options)
-                    ->extract('resourceType')
-                    ->required()
-                    ->serializeBy([ResourceType::class, 'checkValue']),
-                TemplateParam::init('resource_id', $options)->extract('resourceId')->required(),
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20)
-            );
-
-        $_resHandler = $this->responseHandler()->type(PaginatedMetadata::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -319,7 +283,7 @@ class CustomFieldsController extends BaseController
         ?UpdateMetadataRequest $body = null
     ): ?array {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/{resource_type}/{resource_id}/metadata.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $resourceType)
                     ->required()
@@ -379,7 +343,7 @@ class CustomFieldsController extends BaseController
         ?array $names = null
     ): void {
         $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/{resource_type}/{resource_id}/metadata.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $resourceType)
                     ->required()
@@ -419,7 +383,7 @@ class CustomFieldsController extends BaseController
     public function listMetadata(array $options): ?PaginatedMetadata
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/{resource_type}/metadata.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('resource_type', $options)
                     ->extract('resourceType')
@@ -447,6 +411,42 @@ class CustomFieldsController extends BaseController
             );
 
         $_resHandler = $this->responseHandler()->type(PaginatedMetadata::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This endpoint lists metafields associated with a site. The metafield description and usage is
+     * contained in the response.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return ListMetafieldsResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listMetafields(array $options): ?ListMetafieldsResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/{resource_type}/metafields.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('resource_type', $options)
+                    ->extract('resourceType')
+                    ->required()
+                    ->serializeBy([ResourceType::class, 'checkValue']),
+                QueryParam::init('name', $options)->commaSeparated()->extract('name'),
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
+                QueryParam::init('direction', $options)
+                    ->commaSeparated()
+                    ->extract('direction')
+                    ->strictType(
+                        'anyOf(oneOf(SortingDirection),null)',
+                        ['\\AdvancedBillingLib\\Models\\SortingDirection::checkValue SortingDirection']
+                    )
+            );
+
+        $_resHandler = $this->responseHandler()->type(ListMetafieldsResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }

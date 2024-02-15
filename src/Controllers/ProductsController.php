@@ -27,6 +27,30 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class ProductsController extends BaseController
 {
     /**
+     * Sending a DELETE request to this endpoint will archive the product. All current subscribers will be
+     * unffected; their subscription/purchase will continue to be charged monthly.
+     *
+     * This will restrict the option to chose the product for purchase via the Billing Portal, as well as
+     * disable Public Signup Pages for the product.
+     *
+     * @param int $productId The Chargify id of the product
+     *
+     * @return ProductResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function archiveProduct(int $productId): ?ProductResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/products/{product_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('product_id', $productId)->required());
+
+        $_resHandler = $this->responseHandler()->type(ProductResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * Use this method to create a product within your Chargify site.
      *
      * + [Products Documentation](https://maxio-chargify.zendesk.com/hc/en-us/articles/5405561405709)
@@ -47,7 +71,7 @@ class ProductsController extends BaseController
             RequestMethod::POST,
             '/product_families/{product_family_id}/products.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('product_family_id', $productFamilyId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -71,7 +95,7 @@ class ProductsController extends BaseController
     public function readProduct(int $productId): ?ProductResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/products/{product_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('product_id', $productId)->required());
 
         $_resHandler = $this->responseHandler()->type(ProductResponse::class);
@@ -103,7 +127,7 @@ class ProductsController extends BaseController
     public function updateProduct(int $productId, ?CreateOrUpdateProductRequest $body = null): ?ProductResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/products/{product_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('product_id', $productId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -121,30 +145,6 @@ class ProductsController extends BaseController
     }
 
     /**
-     * Sending a DELETE request to this endpoint will archive the product. All current subscribers will be
-     * unffected; their subscription/purchase will continue to be charged monthly.
-     *
-     * This will restrict the option to chose the product for purchase via the Billing Portal, as well as
-     * disable Public Signup Pages for the product.
-     *
-     * @param int $productId The Chargify id of the product
-     *
-     * @return ProductResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function archiveProduct(int $productId): ?ProductResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/products/{product_id}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('product_id', $productId)->required());
-
-        $_resHandler = $this->responseHandler()->type(ProductResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
      * This method allows to retrieve a Product object by its `api_handle`.
      *
      * @param string $apiHandle The handle of the product
@@ -156,7 +156,7 @@ class ProductsController extends BaseController
     public function readProductByHandle(string $apiHandle): ?ProductResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/products/handle/{api_handle}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('api_handle', $apiHandle)->required());
 
         $_resHandler = $this->responseHandler()->type(ProductResponse::class);
@@ -176,7 +176,7 @@ class ProductsController extends BaseController
     public function listProducts(array $options): ?array
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/products.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 QueryParam::init('date_field', $options)
                     ->commaSeparated()

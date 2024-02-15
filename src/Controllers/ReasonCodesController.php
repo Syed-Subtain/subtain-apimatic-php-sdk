@@ -26,6 +26,103 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class ReasonCodesController extends BaseController
 {
     /**
+     * This method gives a merchant the option to retrieve a list of a particular code for a given Site by
+     * providing the unique numerical ID of the code.
+     *
+     * @param int $reasonCodeId The Chargify id of the reason code
+     *
+     * @return ReasonCodeResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function readReasonCode(int $reasonCodeId): ?ReasonCodeResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/reason_codes/{reason_code_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('reason_code_id', $reasonCodeId)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(ReasonCodeResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This method gives a merchant the option to delete one reason code from the Churn Reason Codes. This
+     * code will be immediately removed. This action is not reversable.
+     *
+     * @param int $reasonCodeId The Chargify id of the reason code
+     *
+     * @return ReasonCodesJsonResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function deleteReasonCode(int $reasonCodeId): ?ReasonCodesJsonResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/reason_codes/{reason_code_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('reason_code_id', $reasonCodeId)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(ReasonCodesJsonResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This method gives a merchant the option to retrieve a list of all of the current churn codes for a
+     * given site.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return ReasonCodeResponse[]|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listReasonCodes(array $options): ?array
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/reason_codes.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20)
+            );
+
+        $_resHandler = $this->responseHandler()->type(ReasonCodeResponse::class, 1);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This method gives a merchant the option to update an existing reason code for a given site.
+     *
+     * @param int $reasonCodeId The Chargify id of the reason code
+     * @param UpdateReasonCodeRequest|null $body
+     *
+     * @return ReasonCodeResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function updateReasonCode(int $reasonCodeId, ?UpdateReasonCodeRequest $body = null): ?ReasonCodeResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/reason_codes/{reason_code_id}.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('reason_code_id', $reasonCodeId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(ReasonCodeResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * # Reason Codes Intro
      *
      * ReasonCodes are a way to gain a high level view of why your customers are cancelling the subcription
@@ -55,7 +152,7 @@ class ReasonCodesController extends BaseController
     public function createReasonCode(?CreateReasonCodeRequest $body = null): ?ReasonCodeResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/reason_codes.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
@@ -64,103 +161,6 @@ class ReasonCodesController extends BaseController
                 ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
             )
             ->type(ReasonCodeResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This method gives a merchant the option to retrieve a list of all of the current churn codes for a
-     * given site.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return ReasonCodeResponse[]|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listReasonCodes(array $options): ?array
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/reason_codes.json')
-            ->auth('global')
-            ->parameters(
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20)
-            );
-
-        $_resHandler = $this->responseHandler()->type(ReasonCodeResponse::class, 1);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This method gives a merchant the option to retrieve a list of a particular code for a given Site by
-     * providing the unique numerical ID of the code.
-     *
-     * @param int $reasonCodeId The Chargify id of the reason code
-     *
-     * @return ReasonCodeResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function readReasonCode(int $reasonCodeId): ?ReasonCodeResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/reason_codes/{reason_code_id}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('reason_code_id', $reasonCodeId)->required());
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(ReasonCodeResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This method gives a merchant the option to update an existing reason code for a given site.
-     *
-     * @param int $reasonCodeId The Chargify id of the reason code
-     * @param UpdateReasonCodeRequest|null $body
-     *
-     * @return ReasonCodeResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function updateReasonCode(int $reasonCodeId, ?UpdateReasonCodeRequest $body = null): ?ReasonCodeResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/reason_codes/{reason_code_id}.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('reason_code_id', $reasonCodeId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(ReasonCodeResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This method gives a merchant the option to delete one reason code from the Churn Reason Codes. This
-     * code will be immediately removed. This action is not reversable.
-     *
-     * @param int $reasonCodeId The Chargify id of the reason code
-     *
-     * @return ReasonCodesJsonResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function deleteReasonCode(int $reasonCodeId): ?ReasonCodesJsonResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/reason_codes/{reason_code_id}.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('reason_code_id', $reasonCodeId)->required());
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(ReasonCodesJsonResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }

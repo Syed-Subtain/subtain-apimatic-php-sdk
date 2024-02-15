@@ -34,48 +34,6 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class SubscriptionGroupsController extends BaseController
 {
     /**
-     * Create multiple subscriptions at once under the same customer and consolidate them into a
-     * subscription group.
-     *
-     * You must provide one and only one of the `payer_id`/`payer_reference`/`payer_attributes` for the
-     * customer attached to the group.
-     *
-     * You must provide one and only one of the
-     * `payment_profile_id`/`credit_card_attributes`/`bank_account_attributes` for the payment profile
-     * attached to the group.
-     *
-     * Only one of the `subscriptions` can have `"primary": true` attribute set.
-     *
-     * When passing product to a subscription you can use either `product_id` or `product_handle` or
-     * `offer_id`. You can also use `custom_price` instead.
-     *
-     * @param SubscriptionGroupSignupRequest|null $body
-     *
-     * @return SubscriptionGroupSignupResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function signupWithSubscriptionGroup(
-        ?SubscriptionGroupSignupRequest $body = null
-    ): ?SubscriptionGroupSignupResponse {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscription_groups/signup.json')
-            ->auth('global')
-            ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn(
-                '422',
-                ErrorType::init(
-                    'Unprocessable Entity (WebDAV)',
-                    SubscriptionGroupSignupErrorResponseException::class
-                )
-            )
-            ->type(SubscriptionGroupSignupResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
      * Creates a subscription group with given members.
      *
      * @param CreateSubscriptionGroupRequest|null $body
@@ -87,7 +45,7 @@ class SubscriptionGroupsController extends BaseController
     public function createSubscriptionGroup(?CreateSubscriptionGroupRequest $body = null): ?SubscriptionGroupResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscription_groups.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
@@ -96,36 +54,6 @@ class SubscriptionGroupsController extends BaseController
                 ErrorType::init('Unprocessable Entity (WebDAV)', SingleStringErrorResponseException::class)
             )
             ->type(SubscriptionGroupResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Returns an array of subscription groups for the site. The response is paginated and will return a
-     * `meta` key with pagination information.
-     *
-     * #### Account Balance Information
-     *
-     * Account balance information for the subscription groups is not returned by default. If this
-     * information is desired, the `include[]=account_balances` parameter must be provided with the request.
-     *
-     * @param array $options Array with all options for search
-     *
-     * @return ListSubscriptionGroupsResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function listSubscriptionGroups(array $options): ?ListSubscriptionGroupsResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscription_groups.json')
-            ->auth('global')
-            ->parameters(
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
-                QueryParam::init('include', $options)->commaSeparated()->extract('mInclude')
-            );
-
-        $_resHandler = $this->responseHandler()->type(ListSubscriptionGroupsResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -147,7 +75,7 @@ class SubscriptionGroupsController extends BaseController
     public function readSubscriptionGroup(string $uid): ?FullSubscriptionGroupResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscription_groups/{uid}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('uid', $uid)->required());
 
         $_resHandler = $this->responseHandler()->type(FullSubscriptionGroupResponse::class);
@@ -156,41 +84,31 @@ class SubscriptionGroupsController extends BaseController
     }
 
     /**
-     * Use this endpoint to update subscription group members.
-     * `"member_ids": []` should contain an array of both subscription IDs to set as group members and
-     * subscription IDs already present in the groups. Not including them will result in removing them from
-     * subscription group. To clean up members, just leave the array empty.
+     * For sites making use of the [Relationship Billing](https://chargify.zendesk.com/hc/en-
+     * us/articles/4407737494171) and [Customer Hierarchy](https://chargify.zendesk.com/hc/en-
+     * us/articles/4407746683291) features, it is possible to remove existing subscription from
+     * subscription group.
      *
-     * @param string $uid The uid of the subscription group
-     * @param UpdateSubscriptionGroupRequest|null $body
+     * @param string $subscriptionId The Chargify id of the subscription
      *
-     * @return SubscriptionGroupResponse|null Response from the API call
+     * @return void Response from the API call
      *
      * @throws ApiException Thrown if API call fails
      */
-    public function updateSubscriptionGroupMembers(
-        string $uid,
-        ?UpdateSubscriptionGroupRequest $body = null
-    ): ?SubscriptionGroupResponse {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/subscription_groups/{uid}.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('uid', $uid)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
+    public function removeSubscriptionFromGroup(string $subscriptionId): void
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/subscriptions/{subscription_id}/group.json')
+            ->auth('BasicAuth')
+            ->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
 
         $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
             ->throwErrorOn(
                 '422',
-                ErrorType::init(
-                    'Unprocessable Entity (WebDAV)',
-                    SubscriptionGroupUpdateErrorResponseException::class
-                )
-            )
-            ->type(SubscriptionGroupResponse::class);
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+            );
 
-        return $this->execute($_reqBuilder, $_resHandler);
+        $this->execute($_reqBuilder, $_resHandler);
     }
 
     /**
@@ -206,7 +124,7 @@ class SubscriptionGroupsController extends BaseController
     public function deleteSubscriptionGroup(string $uid): ?DeleteSubscriptionGroupResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/subscription_groups/{uid}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('uid', $uid)->required());
 
         $_resHandler = $this->responseHandler()
@@ -231,7 +149,7 @@ class SubscriptionGroupsController extends BaseController
     public function readSubscriptionGroupBySubscriptionId(string $subscriptionId): ?FullSubscriptionGroupResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscription_groups/lookup.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(QueryParam::init('subscription_id', $subscriptionId)->commaSeparated()->required());
 
         $_resHandler = $this->responseHandler()
@@ -282,7 +200,7 @@ class SubscriptionGroupsController extends BaseController
         ?AddSubscriptionToAGroup $body = null
     ): ?SubscriptionGroupResponse {
         $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscriptions/{subscription_id}/group.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -295,30 +213,112 @@ class SubscriptionGroupsController extends BaseController
     }
 
     /**
-     * For sites making use of the [Relationship Billing](https://chargify.zendesk.com/hc/en-
-     * us/articles/4407737494171) and [Customer Hierarchy](https://chargify.zendesk.com/hc/en-
-     * us/articles/4407746683291) features, it is possible to remove existing subscription from
+     * Create multiple subscriptions at once under the same customer and consolidate them into a
      * subscription group.
      *
-     * @param string $subscriptionId The Chargify id of the subscription
+     * You must provide one and only one of the `payer_id`/`payer_reference`/`payer_attributes` for the
+     * customer attached to the group.
      *
-     * @return void Response from the API call
+     * You must provide one and only one of the
+     * `payment_profile_id`/`credit_card_attributes`/`bank_account_attributes` for the payment profile
+     * attached to the group.
+     *
+     * Only one of the `subscriptions` can have `"primary": true` attribute set.
+     *
+     * When passing product to a subscription you can use either `product_id` or `product_handle` or
+     * `offer_id`. You can also use `custom_price` instead.
+     *
+     * @param SubscriptionGroupSignupRequest|null $body
+     *
+     * @return SubscriptionGroupSignupResponse|null Response from the API call
      *
      * @throws ApiException Thrown if API call fails
      */
-    public function removeSubscriptionFromGroup(string $subscriptionId): void
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/subscriptions/{subscription_id}/group.json')
-            ->auth('global')
-            ->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
+    public function signupWithSubscriptionGroup(
+        ?SubscriptionGroupSignupRequest $body = null
+    ): ?SubscriptionGroupSignupResponse {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscription_groups/signup.json')
+            ->auth('BasicAuth')
+            ->parameters(HeaderParam::init('Content-Type', 'application/json'), BodyParam::init($body));
 
         $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
             ->throwErrorOn(
                 '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+                ErrorType::init(
+                    'Unprocessable Entity (WebDAV)',
+                    SubscriptionGroupSignupErrorResponseException::class
+                )
+            )
+            ->type(SubscriptionGroupSignupResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Returns an array of subscription groups for the site. The response is paginated and will return a
+     * `meta` key with pagination information.
+     *
+     * #### Account Balance Information
+     *
+     * Account balance information for the subscription groups is not returned by default. If this
+     * information is desired, the `include[]=account_balances` parameter must be provided with the request.
+     *
+     * @param array $options Array with all options for search
+     *
+     * @return ListSubscriptionGroupsResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function listSubscriptionGroups(array $options): ?ListSubscriptionGroupsResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscription_groups.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
+                QueryParam::init('include', $options)->commaSeparated()->extract('mInclude')
             );
 
-        $this->execute($_reqBuilder, $_resHandler);
+        $_resHandler = $this->responseHandler()->type(ListSubscriptionGroupsResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Use this endpoint to update subscription group members.
+     * `"member_ids": []` should contain an array of both subscription IDs to set as group members and
+     * subscription IDs already present in the groups. Not including them will result in removing them from
+     * subscription group. To clean up members, just leave the array empty.
+     *
+     * @param string $uid The uid of the subscription group
+     * @param UpdateSubscriptionGroupRequest|null $body
+     *
+     * @return SubscriptionGroupResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function updateSubscriptionGroupMembers(
+        string $uid,
+        ?UpdateSubscriptionGroupRequest $body = null
+    ): ?SubscriptionGroupResponse {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/subscription_groups/{uid}.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('uid', $uid)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn(
+                '422',
+                ErrorType::init(
+                    'Unprocessable Entity (WebDAV)',
+                    SubscriptionGroupUpdateErrorResponseException::class
+                )
+            )
+            ->type(SubscriptionGroupResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
     }
 }

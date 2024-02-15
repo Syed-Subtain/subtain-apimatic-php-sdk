@@ -25,6 +25,47 @@ use CoreInterfaces\Core\Request\RequestMethod;
 class SubscriptionProductsController extends BaseController
 {
     /**
+     * ## Previewing a future date
+     * It is also possible to preview the migration for a date in the future, as long as it's still within
+     * the subscription's current billing period, by passing a `proration_date` along with the request (eg:
+     * `"proration_date": "2020-12-18T18:25:43.511Z"`).
+     *
+     * This will calculate the prorated adjustment, charge, payment and credit applied values assuming the
+     * migration is done at that date in the future as opposed to right now.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param SubscriptionMigrationPreviewRequest|null $body
+     *
+     * @return SubscriptionMigrationPreviewResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function previewSubscriptionProductMigration(
+        string $subscriptionId,
+        ?SubscriptionMigrationPreviewRequest $body = null
+    ): ?SubscriptionMigrationPreviewResponse {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::POST,
+            '/subscriptions/{subscription_id}/migrations/preview.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn(
+                '422',
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+            )
+            ->type(SubscriptionMigrationPreviewResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
      * In order to create a migration, you must pass the `product_id` or `product_handle` in the object
      * when you send a POST request. You may also pass either a `product_price_point_id` or
      * `product_price_point_handle` to choose which price point the subscription is moved to. If no price
@@ -133,7 +174,7 @@ class SubscriptionProductsController extends BaseController
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/migrations.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -146,47 +187,6 @@ class SubscriptionProductsController extends BaseController
                 ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
             )
             ->type(SubscriptionResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * ## Previewing a future date
-     * It is also possible to preview the migration for a date in the future, as long as it's still within
-     * the subscription's current billing period, by passing a `proration_date` along with the request (eg:
-     * `"proration_date": "2020-12-18T18:25:43.511Z"`).
-     *
-     * This will calculate the prorated adjustment, charge, payment and credit applied values assuming the
-     * migration is done at that date in the future as opposed to right now.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param SubscriptionMigrationPreviewRequest|null $body
-     *
-     * @return SubscriptionMigrationPreviewResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function previewSubscriptionProductMigration(
-        string $subscriptionId,
-        ?SubscriptionMigrationPreviewRequest $body = null
-    ): ?SubscriptionMigrationPreviewResponse {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::POST,
-            '/subscriptions/{subscription_id}/migrations/preview.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn(
-                '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
-            )
-            ->type(SubscriptionMigrationPreviewResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }

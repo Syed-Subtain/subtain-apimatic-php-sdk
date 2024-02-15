@@ -50,7 +50,7 @@ class SubscriptionStatusController extends BaseController
     public function retrySubscription(string $subscriptionId): ?SubscriptionResponse
     {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/subscriptions/{subscription_id}/retry.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
 
         $_resHandler = $this->responseHandler()
@@ -79,7 +79,7 @@ class SubscriptionStatusController extends BaseController
         ?CancellationRequest $body = null
     ): ?SubscriptionResponse {
         $_reqBuilder = $this->requestBuilder(RequestMethod::DELETE, '/subscriptions/{subscription_id}.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -88,71 +88,6 @@ class SubscriptionStatusController extends BaseController
 
         $_resHandler = $this->responseHandler()
             ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->throwErrorOn(
-                '422',
-                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
-            )
-            ->type(SubscriptionResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Resume a paused (on-hold) subscription. If the normal next renewal date has not passed, the
-     * subscription will return to active and will renew on that date.  Otherwise, it will behave like a
-     * reactivation, setting the billing date to 'now' and charging the subscriber.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param string|null $calendarBillingResumptionCharge (For calendar billing subscriptions only)
-     *        The way that the resumed subscription's charge should be handled
-     *
-     * @return SubscriptionResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function resumeSubscription(
-        string $subscriptionId,
-        ?string $calendarBillingResumptionCharge = ResumptionCharge::PRORATED
-    ): ?SubscriptionResponse {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscriptions/{subscription_id}/resume.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                QueryParam::init('calendar_billing[\'resumption_charge\']', $calendarBillingResumptionCharge)
-                    ->commaSeparated()
-                    ->serializeBy([ResumptionCharge::class, 'checkValue'])
-            );
-
-        $_resHandler = $this->responseHandler()->type(SubscriptionResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * This will place the subscription in the on_hold state and it will not renew.
-     *
-     * ## Limitations
-     *
-     * You may not place a subscription on hold if the `next_billing` date is within 24 hours.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param PauseRequest|null $body
-     *
-     * @return SubscriptionResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function pauseSubscription(string $subscriptionId, ?PauseRequest $body = null): ?SubscriptionResponse
-    {
-        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscriptions/{subscription_id}/hold.json')
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
             ->throwErrorOn(
                 '422',
                 ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
@@ -186,7 +121,7 @@ class SubscriptionStatusController extends BaseController
         ?PauseRequest $body = null
     ): ?SubscriptionResponse {
         $_reqBuilder = $this->requestBuilder(RequestMethod::PUT, '/subscriptions/{subscription_id}/hold.json')
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -194,6 +129,71 @@ class SubscriptionStatusController extends BaseController
             );
 
         $_resHandler = $this->responseHandler()->type(SubscriptionResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Resume a paused (on-hold) subscription. If the normal next renewal date has not passed, the
+     * subscription will return to active and will renew on that date.  Otherwise, it will behave like a
+     * reactivation, setting the billing date to 'now' and charging the subscriber.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param string|null $calendarBillingResumptionCharge (For calendar billing subscriptions only)
+     *        The way that the resumed subscription's charge should be handled
+     *
+     * @return SubscriptionResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function resumeSubscription(
+        string $subscriptionId,
+        ?string $calendarBillingResumptionCharge = ResumptionCharge::PRORATED
+    ): ?SubscriptionResponse {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscriptions/{subscription_id}/resume.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                QueryParam::init('calendar_billing[\'resumption_charge\']', $calendarBillingResumptionCharge)
+                    ->commaSeparated()
+                    ->serializeBy([ResumptionCharge::class, 'checkValue'])
+            );
+
+        $_resHandler = $this->responseHandler()->type(SubscriptionResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * This will place the subscription in the on_hold state and it will not renew.
+     *
+     * ## Limitations
+     *
+     * You may not place a subscription on hold if the `next_billing` date is within 24 hours.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param PauseRequest|null $body
+     *
+     * @return SubscriptionResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function pauseSubscription(string $subscriptionId, ?PauseRequest $body = null): ?SubscriptionResponse
+    {
+        $_reqBuilder = $this->requestBuilder(RequestMethod::POST, '/subscriptions/{subscription_id}/hold.json')
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn(
+                '422',
+                ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
+            )
+            ->type(SubscriptionResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -385,7 +385,7 @@ class SubscriptionStatusController extends BaseController
             RequestMethod::PUT,
             '/subscriptions/{subscription_id}/reactivate.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -398,73 +398,6 @@ class SubscriptionStatusController extends BaseController
                 ErrorType::init('Unprocessable Entity (WebDAV)', ErrorListResponseException::class)
             )
             ->type(SubscriptionResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Chargify offers the ability to cancel a subscription at the end of the current billing period. This
-     * period is set by its current product.
-     *
-     * Requesting to cancel the subscription at the end of the period sets the `cancel_at_end_of_period`
-     * flag to true.
-     *
-     * Note that you cannot set `cancel_at_end_of_period` at subscription creation, or if the subscription
-     * is past due.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     * @param CancellationRequest|null $body
-     *
-     * @return DelayedCancellationResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function initiateDelayedCancellation(
-        string $subscriptionId,
-        ?CancellationRequest $body = null
-    ): ?DelayedCancellationResponse {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::POST,
-            '/subscriptions/{subscription_id}/delayed_cancel.json'
-        )
-            ->auth('global')
-            ->parameters(
-                TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                HeaderParam::init('Content-Type', 'application/json'),
-                BodyParam::init($body)
-            );
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(DelayedCancellationResponse::class);
-
-        return $this->execute($_reqBuilder, $_resHandler);
-    }
-
-    /**
-     * Removing the delayed cancellation on a subscription will ensure that it doesn't get canceled at the
-     * end of the period that it is in. The request will reset the `cancel_at_end_of_period` flag to
-     * `false`.
-     *
-     * This endpoint is idempotent. If the subscription was not set to cancel in the future, removing the
-     * delayed cancellation has no effect and the call will be successful.
-     *
-     * @param string $subscriptionId The Chargify id of the subscription
-     *
-     * @return DelayedCancellationResponse|null Response from the API call
-     *
-     * @throws ApiException Thrown if API call fails
-     */
-    public function stopDelayedCancellation(string $subscriptionId): ?DelayedCancellationResponse
-    {
-        $_reqBuilder = $this->requestBuilder(
-            RequestMethod::DELETE,
-            '/subscriptions/{subscription_id}/delayed_cancel.json'
-        )->auth('global')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
-
-        $_resHandler = $this->responseHandler()
-            ->throwErrorOn('404', ErrorType::init('Not Found'))
-            ->type(DelayedCancellationResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
@@ -484,7 +417,7 @@ class SubscriptionStatusController extends BaseController
         $_reqBuilder = $this->requestBuilder(
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/cancel_dunning.json'
-        )->auth('global')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
+        )->auth('BasicAuth')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
 
         $_resHandler = $this->responseHandler()->type(SubscriptionResponse::class);
 
@@ -541,7 +474,7 @@ class SubscriptionStatusController extends BaseController
             RequestMethod::POST,
             '/subscriptions/{subscription_id}/renewals/preview.json'
         )
-            ->auth('global')
+            ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 HeaderParam::init('Content-Type', 'application/json'),
@@ -549,6 +482,73 @@ class SubscriptionStatusController extends BaseController
             );
 
         $_resHandler = $this->responseHandler()->type(RenewalPreviewResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Chargify offers the ability to cancel a subscription at the end of the current billing period. This
+     * period is set by its current product.
+     *
+     * Requesting to cancel the subscription at the end of the period sets the `cancel_at_end_of_period`
+     * flag to true.
+     *
+     * Note that you cannot set `cancel_at_end_of_period` at subscription creation, or if the subscription
+     * is past due.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     * @param CancellationRequest|null $body
+     *
+     * @return DelayedCancellationResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function initiateDelayedCancellation(
+        string $subscriptionId,
+        ?CancellationRequest $body = null
+    ): ?DelayedCancellationResponse {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::POST,
+            '/subscriptions/{subscription_id}/delayed_cancel.json'
+        )
+            ->auth('BasicAuth')
+            ->parameters(
+                TemplateParam::init('subscription_id', $subscriptionId)->required(),
+                HeaderParam::init('Content-Type', 'application/json'),
+                BodyParam::init($body)
+            );
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(DelayedCancellationResponse::class);
+
+        return $this->execute($_reqBuilder, $_resHandler);
+    }
+
+    /**
+     * Removing the delayed cancellation on a subscription will ensure that it doesn't get canceled at the
+     * end of the period that it is in. The request will reset the `cancel_at_end_of_period` flag to
+     * `false`.
+     *
+     * This endpoint is idempotent. If the subscription was not set to cancel in the future, removing the
+     * delayed cancellation has no effect and the call will be successful.
+     *
+     * @param string $subscriptionId The Chargify id of the subscription
+     *
+     * @return DelayedCancellationResponse|null Response from the API call
+     *
+     * @throws ApiException Thrown if API call fails
+     */
+    public function stopDelayedCancellation(string $subscriptionId): ?DelayedCancellationResponse
+    {
+        $_reqBuilder = $this->requestBuilder(
+            RequestMethod::DELETE,
+            '/subscriptions/{subscription_id}/delayed_cancel.json'
+        )->auth('BasicAuth')->parameters(TemplateParam::init('subscription_id', $subscriptionId)->required());
+
+        $_resHandler = $this->responseHandler()
+            ->throwErrorOn('404', ErrorType::init('Not Found'))
+            ->type(DelayedCancellationResponse::class);
 
         return $this->execute($_reqBuilder, $_resHandler);
     }
