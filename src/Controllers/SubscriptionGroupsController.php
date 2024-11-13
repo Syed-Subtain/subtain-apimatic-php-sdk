@@ -274,9 +274,9 @@ class SubscriptionGroupsController extends BaseController
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscription_groups.json')
             ->auth('BasicAuth')
             ->parameters(
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
-                QueryParam::init('include', $options)->commaSeparated()->extract('mInclude')
+                QueryParam::init('page', $options)->unIndexed()->extract('page', 1),
+                QueryParam::init('per_page', $options)->unIndexed()->extract('perPage', 20),
+                QueryParam::init('include', $options)->unIndexed()->extract('mInclude')
             );
 
         $_resHandler = $this->responseHandler()->type(ListSubscriptionGroupsResponse::class);

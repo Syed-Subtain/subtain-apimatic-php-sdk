@@ -1028,9 +1028,9 @@ class SubscriptionsController extends BaseController
             ->auth('BasicAuth')
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
-                QueryParam::init('ack', $ack)->plain()->required(),
+                QueryParam::init('ack', $ack)->commaSeparated()->required(),
                 QueryParam::init('cascade[]', $cascade)
-                    ->plain()
+                    ->commaSeparated()
                     ->serializeBy([SubscriptionPurgeType::class, 'checkValue'])
             );
 
@@ -1062,7 +1062,7 @@ class SubscriptionsController extends BaseController
             ->parameters(
                 TemplateParam::init('subscription_id', $subscriptionId)->required(),
                 QueryParam::init('include[]', $mInclude)
-                    ->plain()
+                    ->unIndexed()
                     ->serializeBy([SubscriptionInclude::class, 'checkValue'])
             );
 
@@ -1190,45 +1190,45 @@ class SubscriptionsController extends BaseController
         $_reqBuilder = $this->requestBuilder(RequestMethod::GET, '/subscriptions.json')
             ->auth('BasicAuth')
             ->parameters(
-                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
-                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
+                QueryParam::init('page', $options)->unIndexed()->extract('page', 1),
+                QueryParam::init('per_page', $options)->unIndexed()->extract('perPage', 20),
                 QueryParam::init('state', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('state')
                     ->serializeBy([SubscriptionState::class, 'checkValue']),
-                QueryParam::init('product', $options)->commaSeparated()->extract('product'),
-                QueryParam::init('product_price_point_id', $options)->commaSeparated()->extract('productPricePointId'),
-                QueryParam::init('coupon', $options)->commaSeparated()->extract('coupon'),
+                QueryParam::init('product', $options)->unIndexed()->extract('product'),
+                QueryParam::init('product_price_point_id', $options)->unIndexed()->extract('productPricePointId'),
+                QueryParam::init('coupon', $options)->unIndexed()->extract('coupon'),
                 QueryParam::init('date_field', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('dateField')
                     ->serializeBy([SubscriptionDateField::class, 'checkValue']),
                 QueryParam::init('start_date', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('startDate')
                     ->serializeBy([DateTimeHelper::class, 'toSimpleDate']),
                 QueryParam::init('end_date', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('endDate')
                     ->serializeBy([DateTimeHelper::class, 'toSimpleDate']),
                 QueryParam::init('start_datetime', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('startDatetime')
                     ->serializeBy([DateTimeHelper::class, 'toRfc3339DateTime']),
                 QueryParam::init('end_datetime', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('endDatetime')
                     ->serializeBy([DateTimeHelper::class, 'toRfc3339DateTime']),
-                QueryParam::init('metadata', $options)->commaSeparated()->extract('metadata'),
+                QueryParam::init('metadata', $options)->unIndexed()->extract('metadata'),
                 QueryParam::init('direction', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('direction')
                     ->strictType(
                         'anyOf(oneOf(SortingDirection),null)',
                         ['\\AdvancedBillingLib\\Models\\SortingDirection::checkValue SortingDirection']
                     ),
                 QueryParam::init('sort', $options)
-                    ->commaSeparated()
+                    ->unIndexed()
                     ->extract('sort', SubscriptionSort::SIGNUP_DATE)
                     ->serializeBy([SubscriptionSort::class, 'checkValue'])
             );

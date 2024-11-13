@@ -11,7 +11,9 @@ declare(strict_types=1);
 namespace AdvancedBillingLib\Authentication;
 
 use Core\Authentication\CoreAuth;
+use AdvancedBillingLib\ConfigurationDefaults;
 use Core\Request\Parameters\HeaderParam;
+use Core\Utils\CoreHelper;
 use AdvancedBillingLib\BasicAuthCredentials;
 
 /**
@@ -19,24 +21,18 @@ use AdvancedBillingLib\BasicAuthCredentials;
  */
 class BasicAuthManager extends CoreAuth implements BasicAuthCredentials
 {
-    private $basicAuthUserName;
-
-    private $basicAuthPassword;
-
     /**
-     * Returns an instance of this class.
-     *
-     * @param string $basicAuthUserName The username to use with basic authentication
-     * @param string $basicAuthPassword The password to use with basic authentication
+     * @var array
      */
-    public function __construct(string $basicAuthUserName, string $basicAuthPassword)
+    private $config;
+
+    public function __construct(array $config)
     {
-        parent::__construct(
-            HeaderParam::init('Authorization', 'Basic ' . base64_encode("$basicAuthUserName:$basicAuthPassword"))
-                ->required()
-        );
-        $this->basicAuthUserName = $basicAuthUserName;
-        $this->basicAuthPassword = $basicAuthPassword;
+        $this->config = $config;
+        parent::__construct(HeaderParam::init(
+            'Authorization',
+            CoreHelper::getBasicAuthEncodedString($this->getBasicAuthUserName(), $this->getBasicAuthPassword())
+        )->requiredNonEmpty());
     }
 
     /**
@@ -44,7 +40,7 @@ class BasicAuthManager extends CoreAuth implements BasicAuthCredentials
      */
     public function getBasicAuthUserName(): string
     {
-        return $this->basicAuthUserName;
+        return $this->config['basicAuthUserName'] ?? ConfigurationDefaults::BASIC_AUTH_USER_NAME;
     }
 
     /**
@@ -52,7 +48,7 @@ class BasicAuthManager extends CoreAuth implements BasicAuthCredentials
      */
     public function getBasicAuthPassword(): string
     {
-        return $this->basicAuthPassword;
+        return $this->config['basicAuthPassword'] ?? ConfigurationDefaults::BASIC_AUTH_PASSWORD;
     }
 
     /**
@@ -63,7 +59,7 @@ class BasicAuthManager extends CoreAuth implements BasicAuthCredentials
      */
     public function equals(string $basicAuthUserName, string $basicAuthPassword): bool
     {
-        return $basicAuthUserName == $this->basicAuthUserName &&
-            $basicAuthPassword == $this->basicAuthPassword;
+        return $basicAuthUserName == $this->getBasicAuthUserName() &&
+            $basicAuthPassword == $this->getBasicAuthPassword();
     }
 }

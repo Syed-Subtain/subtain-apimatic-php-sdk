@@ -129,15 +129,12 @@ class AdvancedBillingClient implements ConfigurationInterface
     public function __construct(array $config = [])
     {
         $this->config = array_merge(ConfigurationDefaults::_ALL, CoreHelper::clone($config));
-        $this->basicAuthManager = new BasicAuthManager(
-            $this->config['basicAuthUserName'] ?? ConfigurationDefaults::BASIC_AUTH_USER_NAME,
-            $this->config['basicAuthPassword'] ?? ConfigurationDefaults::BASIC_AUTH_PASSWORD
-        );
+        $this->basicAuthManager = new BasicAuthManager($this->config);
         $this->client = ClientBuilder::init(new HttpClient(Configuration::init($this)))
             ->converter(new CompatibilityConverter())
             ->jsonHelper(ApiHelper::getJsonHelper())
             ->apiCallback($this->config['httpCallback'] ?? null)
-            ->userAgent('AB SDK PHP:2.4.69 on OS {os-info}')
+            ->userAgent('AB SDK PHP:9.1.1 on OS {os-info}')
             ->globalConfig($this->getGlobalConfiguration())
             ->serverUrls(self::ENVIRONMENT_MAP[$this->getEnvironment()], Server::DEFAULT_)
             ->authManagers(['BasicAuth' => $this->basicAuthManager])

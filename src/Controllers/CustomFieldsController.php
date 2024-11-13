@@ -349,8 +349,8 @@ class CustomFieldsController extends BaseController
                     ->required()
                     ->serializeBy([ResourceType::class, 'checkValue']),
                 TemplateParam::init('resource_id', $resourceId)->required(),
-                QueryParam::init('name', $name)->plain(),
-                QueryParam::init('names[]', $names)->plain()
+                QueryParam::init('name', $name)->unIndexed(),
+                QueryParam::init('names[]', $names)->unIndexed()
             );
 
         $_resHandler = $this->responseHandler()->throwErrorOn('404', ErrorType::init('Not Found'));
@@ -389,20 +389,20 @@ class CustomFieldsController extends BaseController
                     ->extract('resourceType')
                     ->required()
                     ->serializeBy([ResourceType::class, 'checkValue']),
-                QueryParam::init('page', $options)->plain()->extract('page', 1),
-                QueryParam::init('per_page', $options)->plain()->extract('perPage', 20),
+                QueryParam::init('page', $options)->commaSeparated()->extract('page', 1),
+                QueryParam::init('per_page', $options)->commaSeparated()->extract('perPage', 20),
                 QueryParam::init('date_field', $options)
-                    ->plain()
+                    ->commaSeparated()
                     ->extract('dateField')
                     ->serializeBy([BasicDateField::class, 'checkValue']),
-                QueryParam::init('start_date', $options)->plain()->extract('startDate'),
-                QueryParam::init('end_date', $options)->plain()->extract('endDate'),
-                QueryParam::init('start_datetime', $options)->plain()->extract('startDatetime'),
-                QueryParam::init('end_datetime', $options)->plain()->extract('endDatetime'),
-                QueryParam::init('with_deleted', $options)->plain()->extract('withDeleted'),
-                QueryParam::init('resource_ids[]', $options)->plain()->extract('resourceIds'),
+                QueryParam::init('start_date', $options)->commaSeparated()->extract('startDate'),
+                QueryParam::init('end_date', $options)->commaSeparated()->extract('endDate'),
+                QueryParam::init('start_datetime', $options)->commaSeparated()->extract('startDatetime'),
+                QueryParam::init('end_datetime', $options)->commaSeparated()->extract('endDatetime'),
+                QueryParam::init('with_deleted', $options)->commaSeparated()->extract('withDeleted'),
+                QueryParam::init('resource_ids[]', $options)->commaSeparated()->extract('resourceIds'),
                 QueryParam::init('direction', $options)
-                    ->plain()
+                    ->commaSeparated()
                     ->extract('direction')
                     ->strictType(
                         'anyOf(oneOf(SortingDirection),null)',
