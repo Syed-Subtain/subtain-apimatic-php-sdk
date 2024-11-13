@@ -134,7 +134,7 @@ class AdvancedBillingClient implements ConfigurationInterface
             ->converter(new CompatibilityConverter())
             ->jsonHelper(ApiHelper::getJsonHelper())
             ->apiCallback($this->config['httpCallback'] ?? null)
-            ->userAgent('AB SDK PHP:11.1.1 on OS {os-info}')
+            ->userAgent('AB SDK PHP:11.1.2 on OS {os-info}')
             ->globalConfig($this->getGlobalConfiguration())
             ->serverUrls(self::ENVIRONMENT_MAP[$this->getEnvironment()], Server::DEFAULT_)
             ->authManagers(['BasicAuth' => $this->basicAuthManager])
